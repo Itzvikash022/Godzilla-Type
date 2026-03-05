@@ -47,8 +47,8 @@ export function registerSocketHandlers(io: Server) {
 
     // ---- JOIN ROOM ----
     socket.on(SocketEvents.JOIN_ROOM, (payload: JoinRoomPayload) => {
-      // Leave any existing room first
-      handleLeavePreviousRoom(socket);
+      // Leave any other room first, but don't leave the one we're joining
+      handleLeavePreviousRoom(socket, payload.roomCode);
 
       const room = joinRoom(payload.roomCode, socket.id, payload.playerName);
       if (!room) {
@@ -217,9 +217,9 @@ export function registerSocketHandlers(io: Server) {
       }
     });
 
-    function handleLeavePreviousRoom(socket: Socket) {
+    function handleLeavePreviousRoom(socket: Socket, excludeRoomCode?: string) {
       const existingRoom = findRoomByPlayerId(socket.id);
-      if (existingRoom) {
+      if (existingRoom && existingRoom.code !== excludeRoomCode) {
         const updated = leaveRoom(existingRoom.code, socket.id);
         socket.leave(existingRoom.code);
         if (updated) {

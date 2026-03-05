@@ -14,7 +14,7 @@ import { initDatabase, getPlayerStats, getLeaderboard } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT || '3001', 10);
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'; // Fall back to all for easy dev
 const isProduction = process.env.NODE_ENV === 'production';
 
 // ---- Express App ----
