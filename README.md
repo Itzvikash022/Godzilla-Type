@@ -57,7 +57,7 @@ Godzilla-Type is built to be deployed for free across two services: **Vercel** (
    - Name: `godzilla-type-server`
    - Language: `Node`
    - Root Directory: *(Leave completely blank)*
-   - Build Command: `npm install -g pnpm && pnpm install && pnpm --filter server build`
+   - Build Command: `npm install -g pnpm && pnpm install && pnpm build`
    - Start Command: `cd server && pnpm start`
 5. Deploy. Render will provide a URL like `https://godzilla-type-server.onrender.com`.
 
