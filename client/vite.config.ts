@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../shared/src'),
+      '@godzilla-type/shared': path.resolve(__dirname, '../shared/src'),
       '@data': path.resolve(__dirname, '../data'),
     },
   },
