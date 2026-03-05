@@ -1,28 +1,29 @@
-import { TIMER_MODES } from '@godzilla-type/shared';
-import type { TimerMode } from '@godzilla-type/shared';
-
 interface TimerSelectorProps {
   selected: number;
-  onSelect: (mode: number) => void;
+  onSelect: (duration: number) => void;
   disabled?: boolean;
 }
 
+const DURATIONS = [15, 30, 60, 120];
+
 function TimerSelector({ selected, onSelect, disabled }: TimerSelectorProps) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-text-muted text-sm mr-1">⏱️</span>
-      {TIMER_MODES.map((mode) => (
+    <div className="flex items-center gap-1 bg-bg-secondary/50 rounded-lg p-1">
+      <div className="px-3 py-1 text-[10px] uppercase tracking-widest text-main-sub border-r border-main-sub/20 mr-1">
+        time
+      </div>
+      {DURATIONS.map((duration) => (
         <button
-          key={mode}
-          onClick={() => onSelect(mode)}
+          key={duration}
+          onClick={() => onSelect(duration)}
           disabled={disabled}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-            selected === mode
-              ? 'bg-accent-primary text-bg-primary'
-              : 'bg-bg-primary text-text-secondary hover:text-text-primary hover:bg-bg-hover'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
+          className={`px-3 py-1 text-sm font-mono rounded transition-all ${
+            selected === duration
+              ? 'text-main bg-main/10'
+              : 'text-text-secondary hover:text-text-primary'
+          } disabled:opacity-30`}
         >
-          {mode}s
+          {duration}
         </button>
       ))}
     </div>

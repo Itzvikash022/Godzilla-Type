@@ -1,5 +1,4 @@
 import type { Player } from '@godzilla-type/shared';
-import { TeamColor, TEAM_COLORS } from '@godzilla-type/shared';
 
 interface ProgressBarProps {
   player: Player;
@@ -7,48 +6,23 @@ interface ProgressBarProps {
 }
 
 function ProgressBar({ player, isCurrentUser }: ProgressBarProps) {
-  const teamClass =
-    player.team === TeamColor.RED
-      ? 'team-red'
-      : player.team === TeamColor.BLUE
-        ? 'team-blue'
-        : '';
-
-  const borderClass = isCurrentUser ? 'ring-2 ring-accent-primary/40' : '';
-
   return (
-    <div
-      className={`glass-card p-3 rounded-xl transition-all duration-200 ${borderClass}`}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {player.team !== TeamColor.NONE && (
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: TEAM_COLORS[player.team].bg }}
-            />
-          )}
-          <span className={`text-sm font-medium ${isCurrentUser ? 'text-accent-primary' : 'text-text-primary'}`}>
-            {player.name}
-            {player.isHost && (
-              <span className="ml-1.5 text-xs text-accent-secondary">👑</span>
-            )}
+    <div className={`w-full py-2 flex items-center gap-4 transition-opacity ${player.isFinished ? 'opacity-50' : 'opacity-100'}`}>
+      <div className="flex-1">
+        <div className="flex justify-between items-end mb-1 px-1">
+          <span className={`text-[10px] uppercase tracking-widest ${isCurrentUser ? 'text-main' : 'text-main-sub'}`}>
+            {player.name} {isCurrentUser && '(you)'}
+          </span>
+          <span className="text-[10px] font-mono text-main-sub">
+            {player.wpm} wpm • {player.accuracy}%
           </span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-text-secondary">
-          <span className="font-mono">{player.wpm} <span className="text-text-muted">WPM</span></span>
-          <span className="font-mono">{player.accuracy}%</span>
-          {player.isFinished && (
-            <span className="text-accent-primary font-bold">#{player.finishOrder}</span>
-          )}
+        <div className="h-[2px] w-full bg-main-sub/10 rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all duration-300 ${isCurrentUser ? 'bg-main' : 'bg-main-sub/40'}`}
+            style={{ width: `${player.progress}%` }}
+          />
         </div>
-      </div>
-
-      <div className="w-full h-2 bg-bg-primary rounded-full overflow-hidden">
-        <div
-          className={`progress-bar-fill h-full rounded-full ${teamClass}`}
-          style={{ width: `${player.progress}%` }}
-        />
       </div>
     </div>
   );

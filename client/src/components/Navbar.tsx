@@ -3,39 +3,39 @@ import { Link, useLocation } from 'react-router-dom';
 function Navbar() {
   const location = useLocation();
 
-  const links = [
-    { to: '/', label: 'Home', icon: '🦎' },
-    { to: '/practice', label: 'Practice', icon: '⌨️' },
-    { to: '/multiplayer', label: 'Multiplayer', icon: '🏁' },
-    { to: '/stats', label: 'Stats', icon: '📊' },
+  const navItems = [
+    { path: '/', label: 'home', icon: '🏠' },
+    { path: '/practice', label: 'practice', icon: '⌨️' },
+    { path: '/multiplayer', label: 'multiplayer', icon: '👥' },
+    { path: '/stats', label: 'stats', icon: '📊' },
   ];
 
   return (
-    <nav className="sticky top-0 z-40 glass-card border-b border-white/5 rounded-none">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3 group">
-          <span className="text-2xl">🦎</span>
-          <span className="text-xl font-bold gradient-text group-hover:opacity-80 transition-opacity">
-            Godzilla-Type
+    <nav className="w-full max-w-5xl mx-auto px-6 py-8 flex items-center justify-between">
+      <div className="flex items-center gap-8">
+        <Link to="/" className="flex items-center gap-2 group">
+          <span className="text-2xl filter grayscale group-hover:grayscale-0 transition-all">🦎</span>
+          <span className="text-lg font-bold tracking-tighter text-text-primary">
+            godzilla<span className="text-main">type</span>
           </span>
         </Link>
 
-        <div className="flex items-center gap-1">
-          {links.map((link) => (
+        <div className="flex items-center gap-2">
+          {navItems.map((item) => (
             <Link
-              key={link.to}
-              to={link.to}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                location.pathname === link.to
-                  ? 'bg-accent-primary/20 text-accent-primary'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
-              }`}
+              key={item.path}
+              to={item.path}
+              className={`btn-minimal ${location.pathname === item.path ? 'active' : ''}`}
+              title={item.label}
             >
-              <span className="mr-2">{link.icon}</span>
-              {link.label}
+              <span className="text-xs uppercase tracking-widest">{item.label}</span>
             </Link>
           ))}
         </div>
+      </div>
+
+      <div className="flex items-center gap-6">
+         {/* Settings / Extra info could go here */}
       </div>
     </nav>
   );

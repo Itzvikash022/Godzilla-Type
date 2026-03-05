@@ -5,41 +5,28 @@ export default {
     extend: {
       colors: {
         bg: {
-          primary: '#1a1a2e',
-          secondary: '#16213e',
-          card: '#1e2746',
-          hover: '#253255',
+          primary: '#323437',
+          secondary: '#2c2e31',
+        },
+        main: {
+          DEFAULT: '#e2b714',
+          sub: '#646669',
         },
         text: {
-          primary: '#e2e8f0',
-          secondary: '#94a3b8',
-          muted: '#475569',
-          correct: '#646669',
-        },
-        accent: {
-          primary: '#e2b714',
-          secondary: '#d99e0b',
-          glow: 'rgba(226, 183, 20, 0.15)',
+          primary: '#d1d0c5',
+          secondary: '#646669',
         },
         error: '#ca4754',
-        success: '#4ade80',
-        team: {
-          red: '#ef4444',
-          'red-light': '#fecaca',
-          blue: '#3b82f6',
-          'blue-light': '#bfdbfe',
-        },
+        success: '#e2b714', // Monkeytype often uses current color for correct
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'Fira Code', 'Roboto Mono', 'monospace'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+        sans: ['Inter', 'sans-serif'],
       },
       animation: {
-        'cursor-blink': 'blink 1s step-end infinite',
         'fade-in': 'fadeIn 0.3s ease-out',
         'slide-up': 'slideUp 0.4s ease-out',
-        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
-        'progress-fill': 'progressFill 0.3s ease-out',
+        'pulse-subtle': 'pulseSubtle 2s infinite',
       },
       keyframes: {
         blink: {

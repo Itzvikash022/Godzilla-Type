@@ -27,7 +27,7 @@ import type {
 function Room() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { emit, on, off, socket, isConnected } = useSocket();
+  const { emit, on, isConnected, socket } = useSocket();
 
   const [room, setRoom] = useState<RoomType | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -44,11 +44,6 @@ function Room() {
   const isRacing = room?.state === RaceState.RACING;
   const isFinished = room?.state === RaceState.FINISHED;
 
-  // Typing engine (only active during race)
-  const handleProgress = useCallback((state: TypingState) => {
-    // Progress is sent via interval, not per-keystroke
-  }, []);
-
   const handleFinish = useCallback((state: TypingState) => {
     emit(SocketEvents.PLAYER_PROGRESS, {
       roomCode: code,
@@ -61,7 +56,6 @@ function Room() {
       isFinished: true,
     });
 
-    // Save locally
     saveResult({
       playerName,
       wpm: state.wpm,
@@ -78,14 +72,12 @@ function Room() {
     duration: raceData?.duration || 30,
     providedWords: raceData?.words,
     providedPrompt: raceData?.prompt,
-    onProgress: handleProgress,
+    onProgress: () => {},
     onFinish: handleFinish,
   });
 
-  // Socket listeners
   useEffect(() => {
     if (!isConnected) return;
-
     const cleanups: (() => void)[] = [];
 
     cleanups.push(on(SocketEvents.ROOM_UPDATED, (data: { room: RoomType }) => {
@@ -101,6 +93,7 @@ function Room() {
       setRaceData(data);
       setCountdown(null);
       setRaceResults(null);
+      engine.resetTest(data.words, data.prompt);
     }));
 
     cleanups.push(on(SocketEvents.RACE_PROGRESS, (data: { players: Player[] }) => {
@@ -109,16 +102,9 @@ function Room() {
 
     cleanups.push(on(SocketEvents.RACE_FINISHED, (data: RaceResultsData) => {
       setRaceResults(data);
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     }));
 
-    cleanups.push(on(SocketEvents.ERROR, (data: { message: string }) => {
-      console.error('Socket error:', data.message);
-    }));
-
-    // On mount, emit JOIN_ROOM to ensure we're in the room and get the current state
     if (code && playerName) {
       emit(SocketEvents.JOIN_ROOM, { roomCode: code, playerName });
     }
@@ -126,7 +112,6 @@ function Room() {
     return () => cleanups.forEach((c) => c());
   }, [isConnected, on, code, playerName, emit]);
 
-  // Send progress updates at interval during racing
   useEffect(() => {
     if (isRacing && !engine.isFinished) {
       progressIntervalRef.current = setInterval(() => {
@@ -148,40 +133,19 @@ function Room() {
     }
   }, [isRacing, engine.isFinished, engine.totalCharsTyped, engine.wpm, engine.netWpm, engine.accuracy, engine.progress, code, emit]);
 
-  // Reset typing engine when race starts
-  useEffect(() => {
-    if (raceData) {
-      engine.resetTest(raceData.words, raceData.prompt);
-    }
-  }, [raceData]);
-
-  const handleStartRace = () => {
-    emit(SocketEvents.START_RACE, { roomCode: code });
-  };
-
+  const handleStartRace = () => emit(SocketEvents.START_RACE, { roomCode: code });
   const handleRestartRace = () => {
     emit(SocketEvents.RESTART_RACE, { roomCode: code });
     setRaceResults(null);
     setRaceData(null);
-    setCountdown(null);
   };
-
   const handleLeaveRoom = () => {
     emit(SocketEvents.LEAVE_ROOM, { roomCode: code });
     navigate('/multiplayer');
   };
-
   const handleAssignTeam = (playerId: string, team: TeamColor) => {
     emit(SocketEvents.ASSIGN_TEAM, { roomCode: code, playerId, team });
   };
-
-  const handleToggleTeamMode = () => {
-    emit(SocketEvents.UPDATE_SETTINGS, {
-      roomCode: code,
-      settings: { teamMode: !room?.settings.teamMode },
-    });
-  };
-
   const handleUpdateDuration = (duration: number) => {
     emit(SocketEvents.UPDATE_SETTINGS, {
       roomCode: code,
@@ -189,170 +153,79 @@ function Room() {
     });
   };
 
-  if (!room) {
-    return (
-      <div className="max-w-3xl mx-auto px-6 py-16 text-center">
-        <div className="text-4xl mb-4 animate-pulse">🦎</div>
-        <p className="text-text-secondary">Connecting to room...</p>
-      </div>
-    );
-  }
+  if (!room) return <div className="flex-1 flex items-center justify-center text-main-sub animate-pulse">connecting...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      {/* Room Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary">
-            Room <span className="font-mono text-accent-primary">{code}</span>
-          </h1>
-          <p className="text-text-secondary text-sm">
-            {players.length} player{players.length !== 1 ? 's' : ''} •{' '}
-            {room.settings.teamMode ? '🏁 Team Mode' : '🏁 Free-for-all'} •{' '}
-            {room.settings.timerDuration}s
-          </p>
+    <div className="flex-1 flex flex-col max-w-7xl mx-auto w-full px-6 py-12">
+      {/* Lobby Header */}
+      <div className="flex items-center justify-between mb-12 opacity-80">
+        <div className="flex items-center gap-4">
+          <span className="text-xs uppercase tracking-[0.2em] text-main-sub">room code</span>
+          <span className="text-xl font-bold font-mono text-main">{code}</span>
         </div>
-        <button
-          onClick={handleLeaveRoom}
-          className="px-4 py-2 rounded-lg text-sm text-text-secondary hover:text-error hover:bg-error/10 transition-all"
-        >
-          Leave Room
+        <button onClick={handleLeaveRoom} className="text-xs uppercase tracking-widest text-main-sub hover:text-error transition-colors">
+          leave room
         </button>
       </div>
 
-      {/* Countdown Overlay */}
       {isCountingDown && countdown !== null && <Countdown count={countdown} />}
 
       {/* LOBBY STATE */}
       {isLobby && (
-        <div className="animate-fade-in space-y-6">
-          {/* Room Code Share */}
-          <div className="glass-card p-6 rounded-2xl text-center">
-            <p className="text-text-secondary text-sm mb-2">Share this code with your coworkers</p>
-            <p className="text-5xl font-mono font-black gradient-text tracking-[0.3em]">{code}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 animate-fade-in">
+          <div className="space-y-8">
+            <h2 className="text-sm uppercase tracking-[0.3em] text-main-sub border-b border-main-sub/10 pb-2">Settings</h2>
+            
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-secondary">Race Duration</span>
+                <TimerSelector selected={room.settings.timerDuration} onSelect={handleUpdateDuration} disabled={!isHost} />
+              </div>
+
+              {isHost && (
+                <button
+                  onClick={handleStartRace}
+                  className="w-full py-4 bg-bg-secondary text-main border border-main/20 rounded hover:bg-main/5 transition-all uppercase tracking-[0.2em] text-sm font-bold"
+                >
+                  Start Race
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Host Controls */}
-          {isHost && (
-            <div className="glass-card p-6 rounded-2xl space-y-4">
-              <h3 className="text-lg font-semibold text-text-primary">👑 Host Controls</h3>
-
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary text-sm">Timer Duration</span>
-                <TimerSelector
-                  selected={room.settings.timerDuration}
-                  onSelect={handleUpdateDuration}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary text-sm">Team Mode</span>
-                <button
-                  onClick={handleToggleTeamMode}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    room.settings.teamMode
-                      ? 'bg-accent-primary/20 text-accent-primary'
-                      : 'bg-bg-primary text-text-secondary hover:bg-bg-hover'
-                  }`}
-                >
-                  {room.settings.teamMode ? '✓ Enabled' : 'Disabled'}
-                </button>
-              </div>
-
-              <button
-                onClick={handleStartRace}
-                disabled={players.length < 1}
-                className="w-full py-3 rounded-xl bg-accent-primary text-bg-primary font-bold text-lg hover:bg-accent-secondary transition-all disabled:opacity-50 btn-glow"
-              >
-                🏁 Start Race
-              </button>
-            </div>
-          )}
-
-          {/* Players List */}
-          <div className="glass-card p-6 rounded-2xl">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">Players</h3>
-            <div className="space-y-3">
-              {players.map((player) => (
-                <div
-                  key={player.id}
-                  className="flex items-center justify-between bg-bg-primary/50 p-3 rounded-xl"
-                >
-                  <div className="flex items-center gap-3">
-                    {player.team !== TeamColor.NONE && (
-                      <span
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: TEAM_COLORS[player.team].bg }}
-                      />
-                    )}
-                    <span className="text-text-primary font-medium">
-                      {player.name}
-                      {player.isHost && <span className="ml-2 text-xs text-accent-secondary">👑 Host</span>}
-                      {player.id === currentPlayerId && <span className="ml-2 text-xs text-accent-primary">(You)</span>}
-                    </span>
-                  </div>
-
-                  {/* Team Assignment (visible when team mode is on) */}
-                  {room.settings.teamMode && (isHost || player.id === currentPlayerId) && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleAssignTeam(player.id, TeamColor.RED)}
-                        className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-                          player.team === TeamColor.RED
-                            ? 'bg-team-red text-white'
-                            : 'bg-bg-hover text-text-secondary hover:bg-team-red/20'
-                        }`}
-                      >
-                        Red
-                      </button>
-                      <button
-                        onClick={() => handleAssignTeam(player.id, TeamColor.BLUE)}
-                        className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-                          player.team === TeamColor.BLUE
-                            ? 'bg-team-blue text-white'
-                            : 'bg-bg-hover text-text-secondary hover:bg-team-blue/20'
-                        }`}
-                      >
-                        Blue
-                      </button>
-                    </div>
+          <div className="space-y-8">
+            <h2 className="text-sm uppercase tracking-[0.3em] text-main-sub border-b border-main-sub/10 pb-2">Players ({players.length})</h2>
+            <div className="grid gap-2">
+              {players.map((p) => (
+                <div key={p.id} className="flex items-center justify-between py-2 border-b border-main-sub/5">
+                  <span className={`text-sm ${p.id === currentPlayerId ? 'text-main' : 'text-text-primary'}`}>
+                    {p.name} {p.isHost && '👑'}
+                  </span>
+                  {room.settings.teamMode && (isHost || p.id === currentPlayerId) && (
+                     <div className="flex gap-2">
+                        <button onClick={() => handleAssignTeam(p.id, TeamColor.RED)} className={`text-[10px] uppercase px-2 py-0.5 rounded ${p.team === TeamColor.RED ? 'bg-red-500/20 text-red-500' : 'text-main-sub'}`}>Red</button>
+                        <button onClick={() => handleAssignTeam(p.id, TeamColor.BLUE)} className={`text-[10px] uppercase px-2 py-0.5 rounded ${p.team === TeamColor.BLUE ? 'bg-blue-500/20 text-blue-500' : 'text-main-sub'}`}>Blue</button>
+                     </div>
                   )}
                 </div>
               ))}
             </div>
           </div>
-
-          {!isHost && (
-            <p className="text-center text-text-muted text-sm animate-pulse">
-              Waiting for host to start the race...
-            </p>
-          )}
         </div>
       )}
 
       {/* RACING STATE */}
       {isRacing && (
-        <div className="space-y-6 animate-fade-in">
-          {/* Timer */}
-          <div className="text-center">
-            <span className={`font-mono text-4xl font-bold ${engine.timeLeft <= 5 ? 'text-error animate-pulse' : 'text-accent-primary'}`}>
-              {engine.timeLeft}s
-            </span>
+        <div className="flex flex-col lg:flex-row gap-8 items-start animate-fade-in">
+          {/* Left: Progress Side */}
+          <div className="w-full lg:w-64 space-y-4 pt-12">
+             <h3 className="text-[10px] uppercase tracking-widest text-main-sub opacity-50 mb-4">Live Progress</h3>
+             {players.map(p => <ProgressBar key={p.id} player={p} isCurrentUser={p.id === currentPlayerId} />)}
           </div>
 
-          {/* Progress bars for all players */}
-          <div className="space-y-2">
-            {players.map((player) => (
-              <ProgressBar
-                key={player.id}
-                player={player}
-                isCurrentUser={player.id === currentPlayerId}
-              />
-            ))}
-          </div>
-
-          {/* Typing Area */}
-          <div className="glass-card p-6 rounded-2xl">
+          {/* Center: Typing Area */}
+          <div className="flex-1 flex flex-col items-center">
+            <div className="mb-8 font-mono text-3xl text-main">{engine.timeLeft}s</div>
             <TypingArea
               prompt={engine.prompt}
               charStates={engine.charStates}
@@ -360,23 +233,10 @@ function Room() {
               onKeyDown={engine.handleKeyPress}
               disabled={engine.isFinished}
             />
-          </div>
-
-          {/* Live metrics */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="glass-card p-3 rounded-xl text-center">
-              <p className="text-text-muted text-xs">WPM</p>
-              <p className="text-2xl font-bold gradient-text font-mono">{engine.wpm}</p>
-            </div>
-            <div className="glass-card p-3 rounded-xl text-center">
-              <p className="text-text-muted text-xs">Net WPM</p>
-              <p className="text-2xl font-bold text-accent-primary font-mono">{engine.netWpm}</p>
-            </div>
-            <div className="glass-card p-3 rounded-xl text-center">
-              <p className="text-text-muted text-xs">Accuracy</p>
-              <p className={`text-2xl font-bold font-mono ${engine.accuracy >= 95 ? 'text-success' : 'text-accent-primary'}`}>
-                {engine.accuracy}%
-              </p>
+            {/* Live Stats */}
+            <div className="mt-8 flex gap-8 text-sm opacity-60">
+               <div>WPM: <span className="text-main">{engine.netWpm}</span></div>
+               <div>ACC: <span className="text-main">{engine.accuracy}%</span></div>
             </div>
           </div>
         </div>
@@ -384,27 +244,18 @@ function Room() {
 
       {/* FINISHED STATE */}
       {isFinished && raceResults && (
-        <div className="space-y-6">
-          <div className="text-center mb-4">
-            <div className="text-5xl mb-2">🏁</div>
-            <h2 className="text-2xl font-bold text-text-primary">Race Complete!</h2>
-          </div>
-
-          <Leaderboard
-            players={raceResults.players}
-            teamScores={raceResults.teamScores}
-          />
-
-          {isHost && (
-            <div className="flex justify-center mt-6">
-              <button
-                onClick={handleRestartRace}
-                className="px-8 py-3 rounded-xl bg-accent-primary text-bg-primary font-bold hover:bg-accent-secondary transition-all btn-glow"
-              >
-                🔄 Race Again
-              </button>
-            </div>
-          )}
+        <div className="max-w-3xl mx-auto w-full animate-slide-up">
+           <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold tracking-tighter text-text-primary">Race Result</h2>
+           </div>
+           
+           <Leaderboard players={raceResults.players} teamScores={raceResults.teamScores} />
+           
+           {isHost && (
+             <button onClick={handleRestartRace} className="mt-12 w-full py-4 text-main-sub hover:text-main text-xs uppercase tracking-[0.3em] transition-colors">
+               Restart Race
+             </button>
+           )}
         </div>
       )}
     </div>

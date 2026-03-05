@@ -1,38 +1,62 @@
-import type { PromptMode } from '../hooks/useTypingEngine';
+import type { PromptMode } from '@godzilla-type/shared';
 
 interface ModeSelectorProps {
-  selected: PromptMode;
-  onSelect: (mode: PromptMode) => void;
+  selectedMode: PromptMode;
+  onSelectMode: (mode: PromptMode) => void;
+  selectedDuration: number;
+  onSelectDuration: (duration: number) => void;
   disabled?: boolean;
 }
 
-const MODES: { value: PromptMode; label: string; icon: string; desc: string }[] = [
-  { value: 'words', label: 'Words', icon: '📝', desc: 'Random word sequences' },
-  { value: 'sentences', label: 'Sentences', icon: '💬', desc: 'Natural English sentences' },
-  { value: 'paragraph', label: 'Paragraph', icon: '📄', desc: 'Multi-sentence paragraphs' },
-  { value: 'quote', label: 'Quote', icon: '💡', desc: 'Famous quotes' },
+const MODES: { value: PromptMode; label: string }[] = [
+  { value: 'words', label: 'words' },
+  { value: 'sentences', label: 'sentences' },
+  { value: 'paragraph', label: 'paragraph' },
+  { value: 'quote', label: 'quote' },
 ];
 
-function ModeSelector({ selected, onSelect, disabled }: ModeSelectorProps) {
+const DURATIONS = [15, 30, 60, 120];
+
+function ModeSelector({ 
+  selectedMode, 
+  onSelectMode, 
+  selectedDuration, 
+  onSelectDuration, 
+  disabled 
+}: ModeSelectorProps) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-text-muted text-sm mr-1">Mode:</span>
-      {MODES.map((m) => (
-        <button
-          key={m.value}
-          onClick={() => onSelect(m.value)}
-          disabled={disabled}
-          title={m.desc}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-            selected === m.value
-              ? 'bg-accent-primary text-bg-primary'
-              : 'bg-bg-primary text-text-secondary hover:text-text-primary hover:bg-bg-hover'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          <span className="mr-1.5">{m.icon}</span>
-          {m.label}
-        </button>
-      ))}
+    <div className="flex items-center gap-6 bg-bg-secondary/40 rounded-xl px-4 py-2 animate-fade-in border border-main-sub/5">
+      {/* Mode Select */}
+      <div className="flex items-center gap-2 border-r border-main-sub/10 pr-6">
+        {MODES.map((mode) => (
+          <button
+            key={mode.value}
+            onClick={() => onSelectMode(mode.value)}
+            disabled={disabled}
+            className={`text-xs uppercase tracking-widest px-2 py-1 transition-all ${
+              selectedMode === mode.value ? 'text-main' : 'text-main-sub hover:text-text-primary'
+            } disabled:opacity-30`}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Duration Select */}
+      <div className="flex items-center gap-3">
+        {DURATIONS.map((duration) => (
+          <button
+            key={duration}
+            onClick={() => onSelectDuration(duration)}
+            disabled={disabled}
+            className={`text-xs font-mono px-2 py-1 transition-all ${
+              selectedDuration === duration ? 'text-main' : 'text-main-sub hover:text-text-primary'
+            } disabled:opacity-30`}
+          >
+            {duration}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

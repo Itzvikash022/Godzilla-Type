@@ -1,189 +1,144 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useTypingEngine } from '../hooks/useTypingEngine';
-import type { TypingState, PromptMode } from '../hooks/useTypingEngine';
 import TypingArea from '../components/TypingArea';
-import TimerSelector from '../components/TimerSelector';
 import ModeSelector from '../components/ModeSelector';
 import { saveResult } from '../lib/db';
-import { DEFAULT_TIMER } from '@godzilla-type/shared';
+import type { PromptMode } from '@godzilla-type/shared';
 
 function Practice() {
-  const [duration, setDuration] = useState(DEFAULT_TIMER);
+  const [duration, setDuration] = useState(30);
   const [mode, setMode] = useState<PromptMode>('words');
   const [showResults, setShowResults] = useState(false);
-  const [lastResult, setLastResult] = useState<TypingState | null>(null);
 
-  const handleFinish = useCallback((state: TypingState) => {
-    setShowResults(true);
-    setLastResult(state);
-
-    saveResult({
-      playerName: 'You',
-      wpm: state.wpm,
-      netWpm: state.netWpm,
-      accuracy: state.accuracy,
-      finishOrder: 1,
-      timestamp: Date.now(),
-      roomCode: 'practice',
-      timerDuration: duration,
-    }).catch(console.error);
-  }, [duration]);
-
-  const engine = useTypingEngine({
+  const {
+    prompt,
+    charStates,
+    currentIndex,
+    netWpm,
+    accuracy,
+    timeLeft,
+    isFinished,
+    handleKeyPress,
+    resetTest,
+  } = useTypingEngine({
     duration,
     mode,
-    onFinish: handleFinish,
+    onFinish: (result) => {
+      saveResult({
+        playerName: localStorage.getItem('godzilla-player-name') || 'Local User',
+        wpm: result.wpm,
+        netWpm: result.netWpm,
+        accuracy: result.accuracy,
+        finishOrder: 1,
+        timestamp: Date.now(),
+        roomCode: 'PRACTICE',
+        timerDuration: duration,
+      }).catch(console.error);
+      setShowResults(true);
+    },
   });
-
-  const handleDurationChange = (newDuration: number) => {
-    setDuration(newDuration);
-    setShowResults(false);
-    setLastResult(null);
-    engine.resetTest();
-  };
-
-  const handleModeChange = (newMode: PromptMode) => {
-    setMode(newMode);
-    setShowResults(false);
-    setLastResult(null);
-    // Force reset with new mode — resetTest will pick up via mode prop on re-render
-    engine.resetTest();
-  };
 
   const handleRestart = () => {
     setShowResults(false);
-    setLastResult(null);
-    engine.resetTest();
+    resetTest();
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
-      <div className="text-center mb-8 animate-fade-in">
-        <h1 className="text-3xl font-bold text-text-primary mb-2">Solo Practice</h1>
-        <p className="text-text-secondary">Test your typing speed and accuracy</p>
-      </div>
-
-      {/* Controls: mode + timer + restart */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <ModeSelector
-          selected={mode}
-          onSelect={handleModeChange}
-          disabled={engine.isActive}
-        />
-        <div className="flex items-center gap-4">
-          <TimerSelector
-            selected={duration}
-            onSelect={handleDurationChange}
-            disabled={engine.isActive}
+    <div className="flex-1 flex flex-col items-center justify-center max-w-[1200px] mx-auto w-full px-6">
+      {/* Settings Row: Modes & Durations */}
+      {!isFinished && !showResults && (
+        <div className="mb-8">
+          <ModeSelector 
+            selectedMode={mode} 
+            onSelectMode={(m) => { setMode(m); handleRestart(); }} 
+            selectedDuration={duration} 
+            onSelectDuration={(d) => { setDuration(d); handleRestart(); }}
           />
-          <div
-            className={`font-mono text-2xl font-bold min-w-[3rem] text-right tabular-nums ${
-              engine.timeLeft <= 5 && engine.isActive ? 'text-error animate-pulse' : 'text-accent-primary'
-            }`}
-          >
-            {engine.timeLeft}s
-          </div>
-          <button
-            onClick={handleRestart}
-            className="px-3 py-1.5 rounded-lg bg-bg-primary text-text-muted hover:text-text-primary hover:bg-bg-hover transition-all text-sm"
-            title="Restart (Tab)"
-          >
-            ↻
-          </button>
         </div>
-      </div>
+      )}
 
-      {!showResults ? (
-        <>
-          {/* Live Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-5">
-            <div className="glass-card p-4 rounded-xl text-center">
-              <p className="text-text-muted text-xs uppercase mb-1">WPM</p>
-              <p className="text-3xl font-bold gradient-text font-mono tabular-nums">{engine.wpm}</p>
-            </div>
-            <div className="glass-card p-4 rounded-xl text-center">
-              <p className="text-text-muted text-xs uppercase mb-1">Net WPM</p>
-              <p className="text-3xl font-bold text-accent-primary font-mono tabular-nums">{engine.netWpm}</p>
-            </div>
-            <div className="glass-card p-4 rounded-xl text-center">
-              <p className="text-text-muted text-xs uppercase mb-1">Accuracy</p>
-              <p
-                className={`text-3xl font-bold font-mono tabular-nums ${
-                  engine.accuracy >= 95 ? 'text-success' : engine.accuracy >= 80 ? 'text-accent-primary' : 'text-error'
-                }`}
-              >
-                {engine.accuracy}%
-              </p>
-            </div>
+      {/* Main Stats (Visible only when racing) */}
+      {!isFinished && currentIndex > 0 && !showResults && (
+        <div className="mb-8 flex gap-12 font-mono text-2xl animate-fade-in opacity-80">
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] uppercase tracking-widest text-main-sub">wpm</span>
+            <span className="text-main">{netWpm}</span>
           </div>
+          <div className="flex flex-col items-center">
+             <span className="text-[10px] uppercase tracking-widest text-main-sub">acc</span>
+             <span className="text-main">{accuracy}%</span>
+          </div>
+          <div className="flex flex-col items-center">
+             <span className="text-[10px] uppercase tracking-widest text-main-sub">time</span>
+             <span className="text-main">{timeLeft}s</span>
+          </div>
+        </div>
+      )}
 
-          {/* Typing Area */}
-          <div className="glass-card p-6 rounded-2xl relative overflow-hidden">
-            {/* Hint: test doesn't end on text completion, only on timer */}
-            {!engine.isActive && (
-              <div className="absolute top-3 right-4 text-xs text-text-muted">
-                Timer ends the test — text keeps extending ♾️
-              </div>
-            )}
-            <TypingArea
-              prompt={engine.prompt}
-              charStates={engine.charStates}
-              currentIndex={engine.currentIndex}
-              onKeyDown={engine.handleKeyPress}
-              disabled={engine.isFinished}
-            />
-          </div>
-
-          {/* Progress (position in current buffer, informational) */}
-          <div className="mt-3">
-            <div className="w-full h-1 bg-bg-primary rounded-full overflow-hidden">
-              <div
-                className="progress-bar-fill h-full rounded-full"
-                style={{ width: `${engine.progress}%` }}
-              />
-            </div>
-          </div>
-        </>
-      ) : (
-        /* Results */
-        <div className="animate-slide-up">
-          <div className="glass-card p-8 rounded-2xl text-center mb-6">
-            <div className="text-5xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold text-text-primary mb-6">Test Complete!</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="glass-card p-4 rounded-xl">
-                <p className="text-text-muted text-xs uppercase mb-1">WPM</p>
-                <p className="text-3xl font-bold gradient-text font-mono">{lastResult?.wpm || 0}</p>
-              </div>
-              <div className="glass-card p-4 rounded-xl">
-                <p className="text-text-muted text-xs uppercase mb-1">Net WPM</p>
-                <p className="text-3xl font-bold text-accent-primary font-mono">{lastResult?.netWpm || 0}</p>
-              </div>
-              <div className="glass-card p-4 rounded-xl">
-                <p className="text-text-muted text-xs uppercase mb-1">Accuracy</p>
-                <p
-                  className={`text-3xl font-bold font-mono ${
-                    (lastResult?.accuracy || 0) >= 95 ? 'text-success' : 'text-accent-primary'
-                  }`}
-                >
-                  {lastResult?.accuracy || 0}%
-                </p>
-              </div>
-              <div className="glass-card p-4 rounded-xl">
-                <p className="text-text-muted text-xs uppercase mb-1">Characters</p>
-                <p className="text-3xl font-bold text-text-primary font-mono">{lastResult?.totalCharsTyped || 0}</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-center gap-4">
+      {/* Typing Area */}
+      {!showResults && (
+        <div className="w-full flex flex-col items-center">
+          <TypingArea
+            prompt={prompt}
+            charStates={charStates}
+            currentIndex={currentIndex}
+            onKeyDown={handleKeyPress}
+            disabled={isFinished}
+          />
+          
+          {/* Bottom Restart Button */}
+          {!isFinished && (
             <button
               onClick={handleRestart}
-              className="px-6 py-3 rounded-xl bg-accent-primary text-bg-primary font-semibold hover:bg-accent-secondary transition-all btn-glow"
+              className="mt-8 group flex items-center gap-2 text-main-sub hover:text-main transition-all"
+              title="Restart (Tab)"
             >
-              Try Again
+              <span className="text-xl group-hover:rotate-180 transition-transform duration-500">🔄</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Restart Test</span>
             </button>
-          </div>
+          )}
         </div>
+      )}
+
+      {/* Results Screen */}
+      {showResults && (
+        <div className="animate-slide-up bg-bg-secondary/30 p-12 rounded-2xl border border-main-sub/10 w-full max-w-3xl text-center">
+          <div className="flex justify-between items-start mb-12">
+            <div className="text-left">
+              <span className="text-xs uppercase text-main-sub tracking-widest">net wpm</span>
+              <p className="text-8xl font-bold text-main">{netWpm}</p>
+            </div>
+            <div className="text-left">
+               <span className="text-xs uppercase text-main-sub tracking-widest">accuracy</span>
+               <p className="text-8xl font-bold text-main">{accuracy}%</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-12">
+             <div className="bg-bg-primary/40 p-4 rounded border border-main-sub/5 text-left">
+                <span className="text-[10px] uppercase text-main-sub">mode</span>
+                <p className="text-text-primary uppercase text-sm tracking-widest">{mode}</p>
+             </div>
+             <div className="bg-bg-primary/40 p-4 rounded border border-main-sub/5 text-left">
+                <span className="text-[10px] uppercase text-main-sub">time</span>
+                <p className="text-text-primary text-sm tracking-widest">{duration}s</p>
+             </div>
+          </div>
+
+          <button
+            onClick={handleRestart}
+            className="w-full py-4 border border-main/20 text-main-sub hover:text-main hover:bg-main/5 transition-all text-xs uppercase tracking-[0.3em] rounded"
+          >
+            Restart (Tab)
+          </button>
+        </div>
+      )}
+
+      {/* Quick navigation hint */}
+      {!showResults && currentIndex === 0 && (
+         <div className="mt-8 text-main-sub text-[10px] uppercase tracking-widest opacity-20">
+           press <span className="bg-main-sub/20 px-1 rounded mx-1">tab</span> to quickly restart
+         </div>
       )}
     </div>
   );
