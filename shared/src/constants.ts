@@ -1,0 +1,108 @@
+// ==========================================
+// GODZILLA-TYPE — Constants
+// ==========================================
+
+export const TIMER_MODES = [15, 30, 60] as const;
+export type TimerMode = (typeof TIMER_MODES)[number];
+
+export const DEFAULT_TIMER = 30;
+export const DEFAULT_WORD_COUNT = 50;
+export const ROOM_CODE_LENGTH = 6;
+export const COUNTDOWN_SECONDS = 5;
+export const PROGRESS_BROADCAST_INTERVAL = 150; // ms
+export const MAX_PLAYERS_PER_ROOM = 10;
+
+export const TEAM_COLORS = {
+  RED: { bg: '#ef4444', text: '#fecaca', label: 'Red Team' },
+  BLUE: { bg: '#3b82f6', text: '#bfdbfe', label: 'Blue Team' },
+  NONE: { bg: '#6b7280', text: '#d1d5db', label: 'No Team' },
+} as const;
+
+// ~1000 common English words for typing prompts
+export const COMMON_WORDS: string[] = [
+  'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'I',
+  'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
+  'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
+  'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what',
+  'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me',
+  'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take',
+  'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other',
+  'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
+  'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way',
+  'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us',
+  'great', 'between', 'need', 'large', 'under', 'never', 'each', 'right', 'hand', 'high',
+  'place', 'where', 'turn', 'problem', 'every', 'start', 'city', 'school', 'world', 'away',
+  'might', 'still', 'country', 'help', 'talk', 'line', 'air', 'mother', 'home', 'point',
+  'page', 'letter', 'answer', 'found', 'study', 'learn', 'plant', 'food', 'cover', 'sun',
+  'four', 'state', 'keep', 'eye', 'head', 'far', 'ask', 'late', 'run', 'read',
+  'port', 'live', 'door', 'set', 'close', 'night', 'real', 'life', 'few', 'north',
+  'open', 'seem', 'together', 'next', 'white', 'children', 'begin', 'got', 'walk', 'example',
+  'ease', 'paper', 'group', 'always', 'music', 'those', 'both', 'mark', 'often', 'young',
+  'story', 'mile', 'river', 'car', 'feet', 'book', 'carry', 'took', 'rain', 'eat',
+  'room', 'friend', 'began', 'idea', 'fish', 'mountain', 'stop', 'once', 'base', 'hear',
+  'horse', 'cut', 'sure', 'watch', 'color', 'face', 'wood', 'main', 'enough', 'plain',
+  'girl', 'usual', 'young', 'ready', 'above', 'ever', 'red', 'list', 'though', 'feel',
+  'side', 'been', 'call', 'old', 'below', 'while', 'last', 'let', 'thought', 'cross',
+  'hard', 'field', 'nothing', 'course', 'stay', 'wheel', 'full', 'force', 'blue', 'object',
+  'decide', 'surface', 'deep', 'moon', 'island', 'foot', 'system', 'busy', 'winter', 'sit',
+  'perhaps', 'fill', 'east', 'spot', 'ring', 'fast', 'dark', 'past', 'ball', 'figure',
+  'fire', 'south', 'piece', 'told', 'knew', 'pass', 'since', 'top', 'whole', 'king',
+  'space', 'heard', 'best', 'hour', 'better', 'true', 'during', 'hundred', 'five', 'remember',
+  'step', 'early', 'hold', 'west', 'ground', 'interest', 'reach', 'morning', 'done', 'voice',
+  'less', 'power', 'town', 'fine', 'fly', 'fall', 'lead', 'dark', 'machine', 'note',
+  'wait', 'plan', 'star', 'draw', 'ear', 'land', 'develop', 'class', 'try', 'kind',
+  'special', 'area', 'along', 'record', 'bring', 'shape', 'strong', 'serve', 'hot', 'song',
+  'measure', 'direct', 'product', 'black', 'short', 'number', 'stand', 'question', 'happen', 'complete',
+  'ship', 'half', 'rock', 'order', 'given', 'warm', 'free', 'minute', 'written', 'wild',
+  'happy', 'beside', 'gone', 'sky', 'glass', 'million', 'west', 'lay', 'weather', 'root',
+  'instrument', 'meet', 'third', 'month', 'prove', 'job', 'edge', 'move', 'sign', 'table',
+  'simple', 'several', 'vowel', 'toward', 'war', 'human', 'girl', 'heart', 'sit', 'wonder',
+  'include', 'built', 'bad', 'joy', 'wind', 'sleep', 'village', 'appear', 'press', 'road',
+  'map', 'science', 'rule', 'govern', 'pull', 'cold', 'notice', 'voice', 'unit', 'town',
+  'climb', 'woman', 'captain', 'practice', 'stone', 'brown', 'wear', 'garden', 'equal', 'sent',
+  'choose', 'fell', 'fit', 'flow', 'fair', 'bank', 'collect', 'save', 'control', 'decimal',
+  'gentle', 'woman', 'captain', 'practice', 'stone', 'brown', 'wear', 'garden', 'equal', 'sent',
+  'choose', 'region', 'energy', 'hunt', 'probable', 'bed', 'brother', 'egg', 'ride', 'cell',
+  'believe', 'perhaps', 'pick', 'sudden', 'count', 'reason', 'square', 'syllable', 'born', 'oil',
+  'mix', 'rest', 'broad', 'spell', 'chicken', 'guide', 'gallery', 'bat', 'favor', 'connect',
+  'post', 'spend', 'chord', 'fat', 'glad', 'original', 'share', 'station', 'dad', 'bread',
+  'charge', 'proper', 'bar', 'offer', 'segment', 'slave', 'duck', 'instant', 'market', 'degree',
+  'populate', 'chick', 'dear', 'enemy', 'reply', 'drink', 'occur', 'support', 'speech', 'nature',
+  'range', 'steam', 'motion', 'path', 'liquid', 'valley', 'tiny', 'dream', 'skill', 'fight',
+  'guess', 'necessary', 'sharp', 'wing', 'create', 'neighbor', 'wash', 'quite', 'cloud', 'corn',
+  'compare', 'poem', 'string', 'bell', 'depend', 'meat', 'rub', 'tube', 'famous', 'dollar',
+  'stream', 'fear', 'sight', 'thin', 'triangle', 'planet', 'hurry', 'chief', 'colony', 'clock',
+  'mine', 'tie', 'enter', 'major', 'fresh', 'search', 'send', 'yellow', 'gun', 'allow',
+  'print', 'dead', 'operate', 'desert', 'crop', 'modern', 'element', 'hit', 'student', 'corner',
+  'party', 'supply', 'bone', 'rail', 'imagine', 'provide', 'agree', 'thus', 'capital', 'chair',
+  'danger', 'fruit', 'rich', 'thick', 'soldier', 'process', 'master', 'track', 'parent', 'shore',
+  'division', 'sheet', 'substance', 'favor', 'total', 'bright', 'coat', 'mass', 'card', 'band',
+  'rope', 'slip', 'win', 'fence', 'paint', 'member', 'bottom', 'happy', 'twist', 'solve',
+  'noise', 'level', 'chance', 'gather', 'shop', 'stretch', 'throw', 'shine', 'property', 'column',
+  'molecule', 'select', 'wrong', 'gray', 'repeat', 'require', 'wide', 'prepare', 'salt', 'nose',
+  'plural', 'anger', 'claim', 'continent', 'happen', 'tool', 'final', 'summer', 'month', 'block',
+  'chart', 'hat', 'sell', 'success', 'company', 'subtract', 'event', 'particular', 'deal', 'swim',
+  'term', 'opposite', 'wife', 'shoe', 'shoulder', 'spread', 'arrange', 'camp', 'invent', 'cotton',
+  'type', 'race', 'speed', 'fast', 'slow', 'quick', 'test', 'skill', 'code', 'screen',
+  'keyboard', 'focus', 'target', 'finish', 'start', 'game', 'player', 'team', 'score', 'round',
+  'window', 'button', 'click', 'press', 'input', 'output', 'file', 'save', 'load', 'open',
+  'close', 'light', 'dark', 'bright', 'shadow', 'clear', 'clean', 'sharp', 'smooth', 'rough',
+  'strong', 'weak', 'heavy', 'light', 'deep', 'wide', 'narrow', 'tall', 'short', 'long',
+  'small', 'large', 'huge', 'tiny', 'vast', 'thick', 'thin', 'flat', 'round', 'square',
+  'jump', 'climb', 'swim', 'dive', 'float', 'sink', 'rise', 'drop', 'catch', 'throw',
+  'build', 'break', 'shake', 'twist', 'bend', 'fold', 'wrap', 'pack', 'push', 'pull',
+  'grab', 'hold', 'lift', 'lower', 'raise', 'swing', 'spin', 'roll', 'slide', 'glide',
+  'march', 'dance', 'skip', 'hop', 'leap', 'bound', 'sprint', 'jog', 'walk', 'crawl',
+  'smile', 'laugh', 'cry', 'shout', 'whisper', 'sing', 'hum', 'clap', 'snap', 'wave',
+  'think', 'dream', 'wonder', 'doubt', 'believe', 'trust', 'hope', 'wish', 'fear', 'worry',
+  'love', 'care', 'share', 'give', 'take', 'bring', 'send', 'show', 'teach', 'learn',
+  'write', 'read', 'speak', 'listen', 'watch', 'notice', 'find', 'seek', 'search', 'explore',
+  'travel', 'visit', 'return', 'arrive', 'depart', 'stay', 'leave', 'enter', 'exit', 'cross',
+  'ocean', 'river', 'lake', 'stream', 'creek', 'pond', 'beach', 'coast', 'shore', 'cliff',
+  'forest', 'jungle', 'desert', 'field', 'garden', 'park', 'trail', 'road', 'bridge', 'tower',
+  'castle', 'cabin', 'tent', 'house', 'home', 'village', 'town', 'city', 'harbor', 'port',
+  'morning', 'evening', 'sunset', 'dawn', 'dusk', 'night', 'spring', 'summer', 'autumn', 'winter',
+  'breeze', 'storm', 'thunder', 'rain', 'snow', 'frost', 'cloud', 'fog', 'mist', 'wind',
+  'silver', 'golden', 'crimson', 'amber', 'ivory', 'scarlet', 'violet', 'copper', 'bronze', 'pearl',
+  'gentle', 'fierce', 'brave', 'bold', 'calm', 'wild', 'free', 'proud', 'humble', 'wise',
+];
