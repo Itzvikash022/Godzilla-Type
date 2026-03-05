@@ -60,13 +60,10 @@ body {
 }
 
 .typing-char.incorrect {
-  color: #f87171; /* bright red */
-  background-color: rgba(239, 68, 68, 0.15);
-  border-radius: 2px;
+  color: #ef4444; /* bright red */
 }
 
 .typing-char.current {
-  color: #e2b714;
   position: relative;
 }
 

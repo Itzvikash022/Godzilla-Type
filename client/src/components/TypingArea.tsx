@@ -58,7 +58,7 @@ function TypingArea({ prompt, charStates, currentIndex, onKeyDown, disabled }: T
       {/* Typing display */}
       <div
         ref={containerRef}
-        className="font-mono text-2xl leading-relaxed max-h-48 overflow-y-hidden overflow-x-hidden select-none px-2 py-4 whitespace-pre-wrap break-words"
+        className="font-mono text-3xl leading-relaxed overflow-x-hidden select-none px-4 py-6 whitespace-pre-wrap break-all"
       >
         {prompt.split('').map((char, i) => {
           const state = charStates[i] || 'upcoming';

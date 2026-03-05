@@ -8,8 +8,21 @@ interface LeaderboardProps {
 
 function Leaderboard({ players, teamScores }: LeaderboardProps) {
   const sorted = [...players].sort((a, b) => {
-    if (a.finishOrder && b.finishOrder) return a.finishOrder - b.finishOrder;
-    return b.netWpm - a.netWpm;
+    // 1. Primary: Net WPM (highest first)
+    if (b.netWpm !== a.netWpm) {
+      return b.netWpm - a.netWpm;
+    }
+    // 2. Secondary: Accuracy (highest first)
+    if (b.accuracy !== a.accuracy) {
+      return b.accuracy - a.accuracy;
+    }
+    // 3. Tertiary: Finish Order (lowest first, if available)
+    if (a.finishOrder !== b.finishOrder) {
+      if (a.finishOrder === 0) return 1;
+      if (b.finishOrder === 0) return -1;
+      return a.finishOrder - b.finishOrder;
+    }
+    return 0;
   });
 
   return (

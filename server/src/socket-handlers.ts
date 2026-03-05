@@ -36,6 +36,9 @@ export function registerSocketHandlers(io: Server) {
 
     // ---- CREATE ROOM ----
     socket.on(SocketEvents.CREATE_ROOM, (payload: CreateRoomPayload) => {
+      // Leave any existing room first
+      handleLeavePreviousRoom(socket);
+
       const room = createRoom(socket.id, payload.playerName);
       socket.join(room.code);
       socket.emit(SocketEvents.ROOM_CREATED, { room });
@@ -44,8 +47,12 @@ export function registerSocketHandlers(io: Server) {
 
     // ---- JOIN ROOM ----
     socket.on(SocketEvents.JOIN_ROOM, (payload: JoinRoomPayload) => {
+      // Leave any existing room first
+      handleLeavePreviousRoom(socket);
+
       const room = joinRoom(payload.roomCode, socket.id, payload.playerName);
       if (!room) {
+        console.warn(`❌ Join failed for ${payload.playerName} to room ${payload.roomCode}`);
         socket.emit(SocketEvents.ERROR, {
           message: 'Unable to join room. It may not exist, be full, or a race is in progress.',
         });
@@ -210,16 +217,21 @@ export function registerSocketHandlers(io: Server) {
       }
     });
 
+    function handleLeavePreviousRoom(socket: Socket) {
+      const existingRoom = findRoomByPlayerId(socket.id);
+      if (existingRoom) {
+        const updated = leaveRoom(existingRoom.code, socket.id);
+        socket.leave(existingRoom.code);
+        if (updated) {
+          io.to(existingRoom.code).emit(SocketEvents.ROOM_UPDATED, { room: updated });
+        }
+      }
+    }
+
     // ---- DISCONNECT ----
     socket.on('disconnect', () => {
       console.log(`🔌 Player disconnected: ${socket.id}`);
-      const room = findRoomByPlayerId(socket.id);
-      if (room) {
-        const updated = leaveRoom(room.code, socket.id);
-        if (updated) {
-          io.to(room.code).emit(SocketEvents.ROOM_UPDATED, { room: updated });
-        }
-      }
+      handleLeavePreviousRoom(socket);
     });
   });
 }
