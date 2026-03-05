@@ -146,7 +146,7 @@ export function getPlayerStats(playerName: string) {
       : null;
 
     const history = historyResult.length > 0
-      ? historyResult[0].values.map((row) => ({
+      ? historyResult[0].values.map((row: any[]) => ({
           id: row[0],
           playerName: row[1],
           wpm: row[2],
@@ -172,7 +172,7 @@ export function getLeaderboard(limit = 20) {
       [limit]
     );
     if (result.length === 0) return [];
-    return result[0].values.map((row) => ({
+    return result[0].values.map((row: any[]) => ({
       playerName: row[0],
       bestWpm: row[1],
       avgWpm: row[2],
