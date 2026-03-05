@@ -3,15 +3,19 @@ interface CountdownProps {
 }
 
 function Countdown({ count }: CountdownProps) {
+  const isGo = count === 0;
+
   return (
     <div className="countdown-overlay">
       <div className="text-center">
-        <div key={count} className="countdown-number">
-          {count === 0 ? 'GO!' : count}
+        <div key={count} className={`countdown-number ${isGo ? 'go' : ''}`}>
+          {isGo ? 'GO!' : count}
         </div>
-        <p className="text-text-secondary text-lg mt-4">
-          Get ready to type...
-        </p>
+        {!isGo && (
+          <p className="text-main-sub text-sm uppercase tracking-[0.3em] mt-6 animate-pulse">
+            Get ready to type...
+          </p>
+        )}
       </div>
     </div>
   );

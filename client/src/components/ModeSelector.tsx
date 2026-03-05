@@ -13,16 +13,17 @@ const MODES: { value: PromptMode; label: string }[] = [
   { value: 'sentences', label: 'sentences' },
   { value: 'paragraph', label: 'paragraph' },
   { value: 'quote', label: 'quote' },
+  { value: 'custom', label: 'custom' },
 ];
 
 const DURATIONS = [15, 30, 60, 120];
 
-function ModeSelector({ 
-  selectedMode, 
-  onSelectMode, 
-  selectedDuration, 
-  onSelectDuration, 
-  disabled 
+function ModeSelector({
+  selectedMode,
+  onSelectMode,
+  selectedDuration,
+  onSelectDuration,
+  disabled
 }: ModeSelectorProps) {
   return (
     <div className="flex items-center gap-6 bg-bg-secondary/40 rounded-xl px-4 py-2 animate-fade-in border border-main-sub/5">
@@ -33,9 +34,8 @@ function ModeSelector({
             key={mode.value}
             onClick={() => onSelectMode(mode.value)}
             disabled={disabled}
-            className={`text-xs uppercase tracking-widest px-2 py-1 transition-all ${
-              selectedMode === mode.value ? 'text-main' : 'text-main-sub hover:text-text-primary'
-            } disabled:opacity-30`}
+            className={`text-xs uppercase tracking-widest px-2 py-1 transition-all ${selectedMode === mode.value ? 'text-main' : 'text-main-sub hover:text-text-primary'
+              } disabled:opacity-30`}
           >
             {mode.label}
           </button>
@@ -49,9 +49,8 @@ function ModeSelector({
             key={duration}
             onClick={() => onSelectDuration(duration)}
             disabled={disabled}
-            className={`text-xs font-mono px-2 py-1 transition-all ${
-              selectedDuration === duration ? 'text-main' : 'text-main-sub hover:text-text-primary'
-            } disabled:opacity-30`}
+            className={`text-xs font-mono px-2 py-1 transition-all ${selectedDuration === duration ? 'text-main' : 'text-main-sub hover:text-text-primary'
+              } disabled:opacity-30`}
           >
             {duration}
           </button>

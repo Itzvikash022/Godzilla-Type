@@ -1,4 +1,5 @@
 import type { Player } from '@godzilla-type/shared';
+import { hashColor } from '../lib/playerColors';
 
 interface ProgressBarProps {
   player: Player;
@@ -6,11 +7,16 @@ interface ProgressBarProps {
 }
 
 function ProgressBar({ player, isCurrentUser }: ProgressBarProps) {
+  const color = hashColor(player.name);
+
   return (
     <div className={`w-full py-2 flex items-center gap-4 transition-opacity ${player.isFinished ? 'opacity-50' : 'opacity-100'}`}>
       <div className="flex-1">
         <div className="flex justify-between items-end mb-1 px-1">
-          <span className={`text-[10px] uppercase tracking-widest ${isCurrentUser ? 'text-main' : 'text-main-sub'}`}>
+          <span
+            className="text-[10px] uppercase tracking-widest font-medium"
+            style={{ color: isCurrentUser ? color : `${color}aa` }}
+          >
             {player.name} {isCurrentUser && '(you)'}
           </span>
           <span className="text-[10px] font-mono text-main-sub">
@@ -19,8 +25,8 @@ function ProgressBar({ player, isCurrentUser }: ProgressBarProps) {
         </div>
         <div className="h-[2px] w-full bg-main-sub/10 rounded-full overflow-hidden">
           <div
-            className={`h-full transition-all duration-300 ${isCurrentUser ? 'bg-main' : 'bg-main-sub/40'}`}
-            style={{ width: `${player.progress}%` }}
+            className="h-full transition-all duration-300 rounded-full"
+            style={{ width: `${player.progress}%`, backgroundColor: color }}
           />
         </div>
       </div>

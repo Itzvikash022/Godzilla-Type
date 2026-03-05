@@ -38,6 +38,7 @@ export interface RoomSettings {
   timerDuration: number; // seconds
   wordCount: number;
   teamMode: boolean;
+  textMode: import('./promptGenerator.js').PromptMode;
 }
 
 export interface Room {
@@ -53,6 +54,7 @@ export interface Room {
 }
 
 export interface RaceResult {
+  id?: string;           // client-generated UUID — used for Convex dedup
   playerName: string;
   wpm: number;
   netWpm: number;
@@ -61,6 +63,8 @@ export interface RaceResult {
   timestamp: number;
   roomCode: string;
   timerDuration: number;
+  synced?: boolean;      // false/undefined = pending, true = uploaded to Convex
+  mode?: string;         // text mode used: 'words' | 'sentences' | 'quote' | 'custom'
 }
 
 export interface PlayerStats {

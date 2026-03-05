@@ -8,7 +8,7 @@ import wordsData from '../../data/words.json' with { type: 'json' };
 import sentencesData from '../../data/sentences.json' with { type: 'json' };
 import quotesData from '../../data/quotes.json' with { type: 'json' };
 
-export type PromptMode = 'words' | 'sentences' | 'paragraph' | 'quote';
+export type PromptMode = 'words' | 'sentences' | 'paragraph' | 'quote' | 'custom';
 
 interface Quote {
   text: string;
@@ -89,6 +89,9 @@ export function generatePrompt(
       return generateParagraph(amount);
     case 'quote':
       return generateQuote();
+    case 'custom':
+      // Custom mode: caller must supply providedPrompt; fall back to words
+      return generateWords(amount);
     default:
       return generateWords(amount);
   }

@@ -12,7 +12,8 @@ A production-ready full-stack web application inspired by Monkeytype, specifical
 - 🔒 **Private Rooms** — Unique 6-character room codes for private, isolated races.
 - ♾️ **Infinite Typing** — Auto-extending text buffers mean you never run out of text during a timed race.
 - 🌐 **LAN Mode Support** — Designed specifically to work offline on a local network.
-- 📊 **Stats Dashboard** — Track Best WPM, average accuracy, and recent race history via IndexedDB.
+- ☁️ **Cloud Sync** — Sign in with Clerk to automatically sync your local stats, match history, and leaderboard rankings across all devices via Convex.
+- 📊 **Stats Dashboard** — Track Best WPM, average accuracy, and recent race history via IndexedDB and Cloud Sync.
 - 🆓 **100% Free** — No paid APIs or services. All large text generation datasets (~3000 words, 300+ sentences, 100+ quotes) are stored locally in JSON format.
 
 ## Tech Stack
@@ -21,23 +22,47 @@ A production-ready full-stack web application inspired by Monkeytype, specifical
 | -------- | ----------------------------- |
 | Frontend | React, Vite, TailwindCSS |
 | Backend | Node.js, Express, Socket.IO |
+| Auth & Sync | Clerk (Auth), Convex (Database) |
 | Database | SQLite (server-side via `sql.js`), IndexedDB (client-side) |
 | Architecture | Monorepo structure managed by `pnpm` workspaces |
 
-## Quick Start (Local Development)
+## 🚀 Quick Start (Local Development)
 
+### 1. Install pnpm (If not already installed)
+This project uses **pnpm workspaces**. If you don't have pnpm, install it globally via npm:
 ```bash
-# 1. Install all dependencies recursively
+npm install -g pnpm
+```
+
+### 2. Install Dependencies
+Install all dependencies for the entire monorepo from the root directory:
+```bash
 pnpm install
+```
 
-# 2. Start the Backend Server (Terminal 1)
-pnpm --filter server dev
+### 3. Build Shared Library (Required)
+The server and client both depend on the `@godzilla-type/shared` package. You **must** build this first to generate the necessary type definitions and library code:
+```bash
+pnpm --filter shared build
+```
 
-# 3. Start the Frontend Client (Terminal 2)
-pnpm dev:client
+### 4. Environment Setup
+Create `.env` files in both `client/` and `server/` directories based on the provided `.env.example` files.
+
+**Required for Client:**
+You must set up Clerk and Convex for the application to run.
+1. `VITE_CLERK_PUBLISHABLE_KEY`: Get this from your [Clerk Dashboard](https://dashboard.clerk.com).
+2. `VITE_CONVEX_URL`: Get this from your [Convex Dashboard](https://dashboard.convex.dev).
+
+### 5. Run the Application
+Start both the Frontend and Backend concurrently using the root shortcut:
+```bash
+pnpm dev
 ```
 - **Frontend URL**: [http://localhost:5173](http://localhost:5173)
 - **Backend URL**: [http://localhost:3001](http://localhost:3001)
+
+---
 
 ## LAN Mode / Office Sharing
 
@@ -66,7 +91,10 @@ Godzilla-Type is built to be deployed for free across two services: **Vercel** (
 2. Connect your GitHub repository.
 3. Settings:
    - Root Directory: **`client`** *(Vercel will detect Vite + pnpm automatically)*
-   - Environment Variables: Add `VITE_SERVER_URL` and set the value to your Render URL.
+   - Environment Variables: 
+     - `VITE_SERVER_URL`: Set to your Render URL.
+     - `VITE_CLERK_PUBLISHABLE_KEY`: Set to your Clerk Publishable Key.
+     - `VITE_CONVEX_URL`: Set to your Convex deployment URL.
 4. Deploy. Vercel will provide a URL like `https://godzilla-type.vercel.app`.
 
 ### Step 3: Allow CORS

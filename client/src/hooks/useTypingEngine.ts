@@ -51,9 +51,9 @@ interface UseTypingEngineOptions {
 }
 
 // How many chars before the end we trigger an extension
-const EXTEND_THRESHOLD = 80;
+const EXTEND_THRESHOLD = 200;
 // How many words to add when extending
-const EXTEND_AMOUNT = 40;
+const EXTEND_AMOUNT = 60;
 
 export function useTypingEngine(options: UseTypingEngineOptions) {
   const {
@@ -114,7 +114,7 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
         w = providedWords;
         p = providedPrompt;
       } else {
-        const r = generatePrompt(mode, 60);
+        const r = generatePrompt(mode, 100);
         w = r.words;
         p = r.prompt;
       }
@@ -138,7 +138,7 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
       setIsFinished(false);
       setTimeLeft(duration);
       setIsActive(false);
-      
+
       startTimeRef.current = 0;
       finishedRef.current = false;
       totalCharsTypedRef.current = 0;
@@ -171,7 +171,7 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
         const t = totalCharsTypedRef.current;
         const c = correctCharsRef.current;
         const errs = incorrectCharsRef.current;
-        
+
         if (t > 0) {
           setWpm(calculateWPM(t, elapsed));
           setNetWpm(calculateNetWPM(t, errs, elapsed));
@@ -282,7 +282,7 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
 
       // Auto-extend when nearing the end of buffer (timer hasn't expired)
       const charsRemaining = currentPrompt.length - newIndex;
-      if (charsRemaining < EXTEND_THRESHOLD && !finishedRef.current) {
+      if ((charsRemaining < EXTEND_THRESHOLD || charsRemaining <= 10) && !finishedRef.current) {
         extendBuffer();
       }
     },

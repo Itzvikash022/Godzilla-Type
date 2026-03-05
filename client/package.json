@@ -9,11 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.61.3",
+    "@godzilla-type/shared": "workspace:*",
+    "convex": "^1.32.0",
+    "lucide-react": "^0.577.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.0",
-    "socket.io-client": "^4.8.0",
-    "@godzilla-type/shared": "workspace:*"
+    "socket.io-client": "^4.8.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

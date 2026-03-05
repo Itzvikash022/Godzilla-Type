@@ -9,7 +9,7 @@ import {
   TeamColor,
   RoomSettings,
   generateRoomCode,
-  generatePromptText,
+  generatePrompt,
   DEFAULT_TIMER,
   DEFAULT_WORD_COUNT,
   MAX_PLAYERS_PER_ROOM,
@@ -47,6 +47,7 @@ export function createRoom(hostId: string, hostName: string): Room {
       timerDuration: DEFAULT_TIMER,
       wordCount: DEFAULT_WORD_COUNT,
       teamMode: false,
+      textMode: 'words',
     },
     prompt: '',
     words: [],
@@ -132,7 +133,7 @@ export function prepareRace(code: string): Room | null {
   const room = rooms.get(code);
   if (!room) return null;
 
-  const { words, prompt } = generatePromptText(room.settings.wordCount);
+  const { words, prompt } = generatePrompt(room.settings.textMode || 'words', room.settings.wordCount);
   room.words = words;
   room.prompt = prompt;
   room.state = RaceState.COUNTDOWN;

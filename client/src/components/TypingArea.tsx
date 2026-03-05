@@ -21,17 +21,22 @@ function TypingArea({ prompt, charStates, currentIndex, onKeyDown, disabled }: T
     return () => window.removeEventListener('click', handleFocus);
   }, []);
 
-  // Scroll logic: Center the current line
+  // Scroll logic: Shift lines up as typist moves down
   useEffect(() => {
     if (cursorRef.current && containerRef.current) {
       const container = containerRef.current;
       const cursor = cursorRef.current;
-      
-      const cursorTop = cursor.offsetTop;
-      const containerHeight = container.clientHeight;
-      const scrollY = cursorTop - containerHeight / 2 + 32;
+      const lineWeight = 48; // Based on index.css font-size + line-height
 
-      container.scrollTo({ top: scrollY, behavior: 'smooth' });
+      const cursorTop = cursor.offsetTop;
+
+      // We want to show one line above the current one for context
+      // If we are on line 2 (48px) or beyond, we shift up by one line
+      if (cursorTop >= lineWeight) {
+        container.scrollTo({ top: cursorTop - lineWeight, behavior: 'smooth' });
+      } else {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   }, [currentIndex]);
 
@@ -40,37 +45,43 @@ function TypingArea({ prompt, charStates, currentIndex, onKeyDown, disabled }: T
   let charIdx = 0;
 
   return (
-    <div className="relative w-full max-w-[1200px] mx-auto py-8 select-none">
-      {/* Hidden input */}
+    <div className="relative w-full max-w-[1500px] mx-auto py-8 select-none">
+      {/* Hidden input — captures all keyboard and mobile touch input */}
       <input
         ref={inputRef}
         type="text"
+        inputMode="text"
         className="absolute opacity-0 pointer-events-none"
         onKeyDown={onKeyDown}
         disabled={disabled}
         autoFocus
         autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        readOnly={false}
       />
 
-      {/* Words display */}
-      <div 
+      {/* Words display — click or touch anywhere to focus the hidden input */}
+      <div
         ref={containerRef}
-        className="typing-container text-3xl leading-relaxed h-[240px] overflow-hidden transition-all duration-300 pointer-events-none px-4"
+        className="typing-container h-[144px] overflow-hidden transition-all duration-300 pointer-events-none px-4"
+        onTouchStart={() => inputRef.current?.focus()}
       >
         <div className="flex flex-wrap">
           {words.map((word, wordIdx) => {
             const wordChars = word.split('');
-            
+
             return (
-              <div key={wordIdx} className="word mb-4">
+              <div key={wordIdx} className="word">
                 {wordChars.map((char, i) => {
                   const state = charStates[charIdx] || 'upcoming';
                   const isCurrent = charIdx === currentIndex;
                   charIdx++;
 
                   return (
-                    <span 
-                      key={i} 
+                    <span
+                      key={i}
                       className={`char ${state}`}
                       ref={isCurrent ? cursorRef : null}
                     >
@@ -80,7 +91,10 @@ function TypingArea({ prompt, charStates, currentIndex, onKeyDown, disabled }: T
                 })}
                 {/* Add space character logic */}
                 {wordIdx < words.length - 1 && (
-                  <span className={`char ${charStates[charIdx] || 'upcoming'}`} ref={charIdx === currentIndex ? cursorRef : null}>
+                  <span
+                    className={`char ${charStates[charIdx] || 'upcoming'}`}
+                    ref={charIdx === currentIndex ? cursorRef : null}
+                  >
                     {(() => {
                       charIdx++;
                       return '\u00A0';

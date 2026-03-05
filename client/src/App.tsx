@@ -4,6 +4,7 @@ import Practice from './pages/Practice';
 import Multiplayer from './pages/Multiplayer';
 import Room from './pages/Room';
 import Stats from './pages/Stats';
+import LeaderboardPage from './pages/LeaderboardPage';
 import Navbar from './components/Navbar';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
             <Route path="/multiplayer" element={<Multiplayer />} />
             <Route path="/room/:code" element={<Room />} />
             <Route path="/stats" element={<Stats />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
           </Routes>
         </main>
       </div>

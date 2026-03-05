@@ -32,25 +32,28 @@ body {
 
 /* ---- Typing Area (Monkeytype Style) ---- */
 .typing-container {
-  max-width: 1000px;
+  max-width: 1500px;
   width: 100%;
   margin: 0 auto;
   position: relative;
-  font-size: 1.5rem; /* 24px */
+  font-size: 2rem;
+  /* Exact 32px for stable height calculation */
   line-height: 1.5;
+  /* 48px line height */
   outline: none;
 }
 
 .word {
   display: inline-block;
-  margin-right: 0.6em;
+  margin-right: 0.5em;
   color: #646669;
-  position: relative;
   white-space: nowrap;
 }
 
 .char {
   position: relative;
+  will-change: color;
+  transition: color 0.08s ease;
 }
 
 .char.correct {
@@ -64,19 +67,24 @@ body {
 .char.current::after {
   content: '';
   position: absolute;
-  left: 0;
-  bottom: 0px;
+  left: -1px;
+  top: 10%;
   width: 2px;
-  height: 1.2em;
+  height: 80%;
   background-color: #e2b714;
   animation: blink 1s step-end infinite;
-  display: inline-block;
-  vertical-align: middle;
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
 }
 
 /* ---- Custom Components ---- */
@@ -127,6 +135,62 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---- Countdown Overlay (Phase 9) ---- */
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(50, 52, 55, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+.countdown-number {
+  font-size: clamp(6rem, 15vw, 10rem);
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  color: #e2b714;
+  animation: countPop 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  line-height: 1;
+}
+
+.countdown-number.go {
+  color: #4ade80;
+  animation: countPop 0.9s cubic-bezier(0.22, 1, 0.36, 1) both,
+    goPulse 0.6s 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes countPop {
+  from {
+    opacity: 0;
+    transform: scale(2.2);
+    filter: blur(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes goPulse {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.08);
+  }
 }

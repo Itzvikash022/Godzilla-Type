@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getStats, clearStats } from '../lib/db';
+import CloudSyncBanner from '../components/CloudSyncBanner';
 import type { PlayerStats, RaceResult } from '@godzilla-type/shared';
 
 function Stats() {
@@ -8,6 +9,15 @@ function Stats() {
 
   useEffect(() => {
     loadStats();
+
+    const onSyncCompleted = () => {
+      loadStats();
+    };
+
+    window.addEventListener('godzilla-sync-completed', onSyncCompleted);
+    return () => {
+      window.removeEventListener('godzilla-sync-completed', onSyncCompleted);
+    };
   }, []);
 
   const loadStats = async () => {
@@ -54,7 +64,7 @@ function Stats() {
   }
 
   // Prepare chart data (last 20 races)
-  const recentHistory = stats.history.slice(0, 20).reverse();
+  const recentHistory = [...stats.history].slice(0, 20).reverse();
   const maxWpm = Math.max(...recentHistory.map((r) => r.netWpm), 1);
 
   return (
@@ -70,6 +80,11 @@ function Stats() {
         >
           Clear Stats
         </button>
+      </div>
+
+      {/* Cloud Sync Banner */}
+      <div className="mb-8">
+        <CloudSyncBanner />
       </div>
 
       {/* Summary Cards */}
@@ -97,12 +112,12 @@ function Stats() {
         <h3 className="text-lg font-semibold text-text-primary mb-4">📈 WPM History</h3>
         <div className="flex items-end gap-1.5 h-48">
           {recentHistory.map((result, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
               <span className="text-[10px] text-text-muted font-mono">{result.netWpm}</span>
               <div
-                className="chart-bar w-full min-h-[4px]"
+                className="chart-bar w-full min-h-[4px] bg-main rounded-t"
                 style={{
-                  height: `${(result.netWpm / maxWpm) * 100}%`,
+                  height: `${(result.netWpm / Math.max(maxWpm || 100, 1)) * 100}%`,
                   animationDelay: `${i * 50}ms`,
                 }}
                 title={`${result.netWpm} WPM • ${result.accuracy}% accuracy`}
@@ -121,7 +136,7 @@ function Stats() {
         <h3 className="text-lg font-semibold text-text-primary mb-4">🎯 Accuracy History</h3>
         <div className="flex items-end gap-1.5 h-32">
           {recentHistory.map((result, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
               <span className="text-[10px] text-text-muted font-mono">{result.accuracy}%</span>
               <div
                 className="w-full min-h-[4px] rounded-t"

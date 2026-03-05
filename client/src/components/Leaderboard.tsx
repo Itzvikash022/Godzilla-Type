@@ -1,5 +1,6 @@
 import type { Player } from '@godzilla-type/shared';
 import { TeamColor, TEAM_COLORS } from '@godzilla-type/shared';
+import { hashColor } from '../lib/playerColors';
 
 interface LeaderboardProps {
   players: Player[];
@@ -49,16 +50,16 @@ function Leaderboard({ players, teamScores }: LeaderboardProps) {
             {sorted.map((player, i) => (
               <tr key={player.id} className={i === 0 ? 'bg-main/5' : ''}>
                 <td className="font-mono text-sm">
-                   <span className={i === 0 ? 'text-main' : 'text-main-sub'}>
-                     {i + 1}
-                   </span>
+                  <span className={i === 0 ? 'text-main' : 'text-main-sub'}>
+                    {i + 1}
+                  </span>
                 </td>
                 <td>
                   <div className="flex items-center gap-2">
                     {player.team !== TeamColor.NONE && (
-                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TEAM_COLORS[player.team].bg }} />
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TEAM_COLORS[player.team].bg }} />
                     )}
-                    <span className="text-text-primary">{player.name}</span>
+                    <span style={{ color: hashColor(player.name) }}>{player.name}</span>
                   </div>
                 </td>
                 <td className="text-right font-mono text-xl text-main">{player.netWpm}</td>
