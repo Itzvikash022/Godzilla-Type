@@ -38,8 +38,10 @@ app.get('/api/stats/:playerName', (req, res) => {
   res.json(data);
 });
 
-app.get('/api/leaderboard', (_req, res) => {
-  const data = getLeaderboard();
+app.get('/api/leaderboard', (req, res) => {
+  const duration = req.query.duration ? parseInt(req.query.duration as string, 10) : undefined;
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+  const data = getLeaderboard(limit, duration);
   res.json(data);
 });
 

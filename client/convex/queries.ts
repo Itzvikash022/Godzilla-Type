@@ -8,9 +8,23 @@ export const getLeaderboard = query({
     args: {
         sortBy: v.optional(v.union(v.literal('maxWpm'), v.literal('avgWpm'), v.literal('avgAccuracy'))),
         limit: v.optional(v.number()),
+        duration: v.optional(v.union(v.literal(15), v.literal(30), v.literal(60), v.literal(120))),
     },
-    handler: async (ctx, { sortBy = 'maxWpm', limit = 50 }) => {
+    handler: async (ctx, { sortBy = 'maxWpm', limit = 50, duration }) => {
         const stats = await ctx.db.query('playerStats').collect();
+
+        if (duration) {
+            const dKey = `stats${duration}` as const;
+            return stats
+                .filter((s) => s[dKey] && s[dKey]!.racesPlayed > 0)
+                .map((s) => ({
+                    _id: s._id,
+                    username: s.username,
+                    ...s[dKey]!
+                }))
+                .sort((a, b) => (b[sortBy] ?? 0) - (a[sortBy] ?? 0))
+                .slice(0, limit);
+        }
 
         return stats
             .filter((s) => s.racesPlayed > 0)

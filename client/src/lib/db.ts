@@ -69,7 +69,9 @@ export async function getResults(): Promise<RaceResult[]> {
     request.onsuccess = () => {
       const cursor = request.result;
       if (cursor && results.length < 100) {
-        results.push(cursor.value);
+        if (cursor.value.mode !== 'custom') {
+          results.push(cursor.value);
+        }
         cursor.continue();
       } else {
         resolve(results);

@@ -115,7 +115,7 @@ export const submitRaceResult = mutation({
             .filter((q) => q.eq(q.field('userId'), user._id))
             .first();
 
-        if (stats) {
+        if (stats && args.mode !== 'custom') {
             const newRacesPlayed = stats.racesPlayed + 1;
             const newAvgWpm = Math.round(
                 (stats.avgWpm * stats.racesPlayed + args.netWpm) / newRacesPlayed
@@ -125,12 +125,32 @@ export const submitRaceResult = mutation({
                 ((stats.avgAccuracy * stats.racesPlayed + args.accuracy) / newRacesPlayed) * 100
             ) / 100;
 
-            await ctx.db.patch(stats._id, {
+            const updatePayload: any = {
                 avgWpm: newAvgWpm,
                 maxWpm: newMaxWpm,
                 avgAccuracy: newAvgAccuracy,
                 racesPlayed: newRacesPlayed,
-            });
+            };
+
+            // Calculate duration-specific stats
+            if ([15, 30, 60, 120].includes(args.duration)) {
+                const dKey = `stats${args.duration}` as 'stats15' | 'stats30' | 'stats60' | 'stats120';
+                const dStats = stats[dKey] || { maxWpm: 0, avgWpm: 0, avgAccuracy: 0, racesPlayed: 0 };
+
+                const dNewRacesPlayed = dStats.racesPlayed + 1;
+                const dNewAvgWpm = Math.round((dStats.avgWpm * dStats.racesPlayed + args.netWpm) / dNewRacesPlayed);
+                const dNewMaxWpm = Math.max(dStats.maxWpm, args.netWpm);
+                const dNewAvgAccuracy = Math.round(((dStats.avgAccuracy * dStats.racesPlayed + args.accuracy) / dNewRacesPlayed) * 100) / 100;
+
+                updatePayload[dKey] = {
+                    maxWpm: dNewMaxWpm,
+                    avgWpm: dNewAvgWpm,
+                    avgAccuracy: dNewAvgAccuracy,
+                    racesPlayed: dNewRacesPlayed,
+                };
+            }
+
+            await ctx.db.patch(stats._id, updatePayload);
         }
 
         return resultId;

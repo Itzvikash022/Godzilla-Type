@@ -31,5 +31,11 @@ export default defineSchema({
         maxWpm: v.number(),
         avgAccuracy: v.number(),
         racesPlayed: v.number(),
+
+        // Duration-specific categories
+        stats15: v.optional(v.object({ maxWpm: v.number(), avgWpm: v.number(), avgAccuracy: v.number(), racesPlayed: v.number() })),
+        stats30: v.optional(v.object({ maxWpm: v.number(), avgWpm: v.number(), avgAccuracy: v.number(), racesPlayed: v.number() })),
+        stats60: v.optional(v.object({ maxWpm: v.number(), avgWpm: v.number(), avgAccuracy: v.number(), racesPlayed: v.number() })),
+        stats120: v.optional(v.object({ maxWpm: v.number(), avgWpm: v.number(), avgAccuracy: v.number(), racesPlayed: v.number() })),
     }).index('by_username', ['username']),
 });

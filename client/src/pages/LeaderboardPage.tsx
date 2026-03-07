@@ -36,7 +36,7 @@ function SortIcon({ active, desc }: { active: boolean; desc: boolean }) {
 
 // ── Local Leaderboard Tab ─────────────────────────────────────────────────────
 
-function LocalTab() {
+function LocalTab({ duration }: { duration: number | null }) {
     const [entries, setEntries] = useState<LocalEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -45,11 +45,12 @@ function LocalTab() {
 
     useEffect(() => {
         setLoading(true);
-        fetch(`${SERVER_URL}/api/leaderboard`)
+        const url = duration ? `${SERVER_URL}/api/leaderboard?duration=${duration}` : `${SERVER_URL}/api/leaderboard`;
+        fetch(url)
             .then((r) => r.json())
             .then((data) => { setEntries(Array.isArray(data) ? data : []); setLoading(false); })
             .catch(() => { setError('Could not load — is the server running?'); setLoading(false); });
-    }, []);
+    }, [duration]);
 
     const handleSort = (field: SortField) => {
         if (sortBy === field) setSortDesc(!sortDesc);
@@ -97,20 +98,23 @@ function LocalTab() {
 
 // ── Cloud Leaderboard Tab ─────────────────────────────────────────────────────
 
-function CloudTab() {
+function CloudTab({ duration }: { duration: number | null }) {
     const [entries, setEntries] = useState<CloudEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [sortBy, setSortBy] = useState<CloudSortField>('maxWpm');
     const [sortDesc, setSortDesc] = useState(true);
 
-    const fetchLeaderboard = async (sort: CloudSortField) => {
+    const fetchLeaderboard = async (sort: CloudSortField, dur: number | null) => {
         const client = getConvexClient();
         if (!client) { setError('Convex not configured'); setLoading(false); return; }
         setLoading(true);
         try {
+            const queryArgs: any = { sortBy: sort, limit: 50 };
+            if (dur) queryArgs.duration = dur;
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const data = await (client as any).query('queries:getLeaderboard', { sortBy: sort, limit: 50 });
+            const data = await (client as any).query('queries:getLeaderboard', queryArgs);
             setEntries(Array.isArray(data) ? data : []);
         } catch {
             setError('Failed to load cloud leaderboard');
@@ -119,11 +123,11 @@ function CloudTab() {
         }
     };
 
-    useEffect(() => { fetchLeaderboard(sortBy); }, []);
+    useEffect(() => { fetchLeaderboard(sortBy, duration); }, [duration]);
 
     const handleSort = (field: CloudSortField) => {
         if (sortBy === field) setSortDesc(!sortDesc);
-        else { setSortBy(field); setSortDesc(true); fetchLeaderboard(field); }
+        else { setSortBy(field); setSortDesc(true); fetchLeaderboard(field, duration); }
     };
 
     const sorted = [...entries].sort((a, b) => {
@@ -136,7 +140,7 @@ function CloudTab() {
     if (sorted.length === 0) return (
         <div className="text-center py-16">
             <p className="text-main-sub text-[10px] uppercase tracking-widest">No cloud results yet</p>
-            <p className="text-main-sub text-[10px] uppercase tracking-widest opacity-50 mt-2">Enable Cloud Sync in the Stats page to appear here</p>
+            <p className="text-main-sub text-[10px] uppercase tracking-widest opacity-50 mt-2">Complete races to appear here</p>
         </div>
     );
 
@@ -176,6 +180,7 @@ type TabType = 'local' | 'cloud';
 
 function LeaderboardPage() {
     const [tab, setTab] = useState<TabType>('cloud');
+    const [durationFilter, setDurationFilter] = useState<number | null>(null);
     const convexConfigured = isConvexConfigured();
 
     return (
@@ -189,24 +194,48 @@ function LeaderboardPage() {
                 Global rankings — compete against the world
             </p>
 
-            {/* Tab Toggle */}
-            <div className="flex items-center gap-1 bg-bg-secondary/40 rounded-xl p-1 border border-main-sub/5 w-fit mb-8">
-                <button
-                    onClick={() => setTab('cloud')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-all ${tab === 'cloud' ? 'bg-main/10 text-main' : 'text-main-sub hover:text-text-primary'
-                        }`}
-                >
-                    <Cloud size={11} />
-                    Global (Convex)
-                </button>
-                <button
-                    onClick={() => setTab('local')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-all ${tab === 'local' ? 'bg-main/10 text-main' : 'text-main-sub hover:text-text-primary'
-                        }`}
-                >
-                    <Monitor size={11} />
-                    This Server
-                </button>
+            {/* Controls Row */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                {/* Tab Toggle */}
+                <div className="flex items-center gap-1 bg-bg-secondary/40 rounded-xl p-1 border border-main-sub/5 shrink-0">
+                    <button
+                        onClick={() => setTab('cloud')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-all ${tab === 'cloud' ? 'bg-main/10 text-main' : 'text-main-sub hover:text-text-primary'
+                            }`}
+                    >
+                        <Cloud size={11} />
+                        Global
+                    </button>
+                    <button
+                        onClick={() => setTab('local')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-all ${tab === 'local' ? 'bg-main/10 text-main' : 'text-main-sub hover:text-text-primary'
+                            }`}
+                    >
+                        <Monitor size={11} />
+                        Local
+                    </button>
+                </div>
+
+                {/* Duration Filter */}
+                <div className="flex items-center gap-1 bg-bg-secondary/40 rounded-xl p-1 border border-main-sub/5 overflow-x-auto max-w-full">
+                    <button
+                        onClick={() => setDurationFilter(null)}
+                        className={`shrink-0 px-3 py-1 rounded text-[10px] uppercase tracking-widest transition-all ${durationFilter === null ? 'bg-main/10 text-main' : 'text-main-sub hover:text-text-primary'
+                            }`}
+                    >
+                        All Time
+                    </button>
+                    {[15, 30, 60, 120].map((dur) => (
+                        <button
+                            key={dur}
+                            onClick={() => setDurationFilter(dur)}
+                            className={`shrink-0 px-3 py-1 rounded font-mono text-sm transition-all ${durationFilter === dur ? 'bg-main/10 text-main' : 'text-main-sub hover:text-text-primary'
+                                }`}
+                        >
+                            {dur}s
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Content */}
@@ -217,9 +246,9 @@ function LeaderboardPage() {
                     <p className="text-main-sub text-[10px] uppercase tracking-widest opacity-50 mt-2">Add VITE_CONVEX_URL to .env.local</p>
                 </div>
             ) : tab === 'cloud' ? (
-                <CloudTab />
+                <CloudTab duration={durationFilter} />
             ) : (
-                <LocalTab />
+                <LocalTab duration={durationFilter} />
             )}
         </div>
     );
