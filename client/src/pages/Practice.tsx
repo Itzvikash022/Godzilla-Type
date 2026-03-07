@@ -1,5 +1,9 @@
-import { useState, useRef } from 'react';
-import { RotateCcw } from 'lucide-react';
+// ===================================
+// GODZILLA-TYPE — Practice.tsx
+// ===================================
+
+import { useState, useEffect } from 'react';
+import { RotateCcw, Clock, History } from 'lucide-react';
 import { useTypingEngine } from '../hooks/useTypingEngine';
 import TypingArea from '../components/TypingArea';
 import ModeSelector from '../components/ModeSelector';
@@ -8,6 +12,8 @@ import { triggerCloudSync } from '../components/SyncManager';
 import type { PromptMode } from '@godzilla-type/shared';
 
 const MAX_CUSTOM_CHARS = 5000;
+const STORAGE_CUSTOM_TEXT = 'godzilla-custom-text';
+const STORAGE_CUSTOM_HISTORY = 'godzilla-custom-history';
 
 function sanitizeCustomText(text: string): string {
   return text
@@ -24,9 +30,32 @@ function Practice() {
 
   // Custom mode state
   const [customInput, setCustomInput] = useState('');
+  const [customHistory, setCustomHistory] = useState<string[]>([]);
   const [customError, setCustomError] = useState('');
   const [customReady, setCustomReady] = useState(false);
   const [activeCustomText, setActiveCustomText] = useState('');
+
+  // Load custom text and history on mount
+  useEffect(() => {
+    const savedText = localStorage.getItem(STORAGE_CUSTOM_TEXT);
+    if (savedText) setCustomInput(savedText);
+
+    const savedHistory = localStorage.getItem(STORAGE_CUSTOM_HISTORY);
+    if (savedHistory) {
+      try {
+        setCustomHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error('Failed to parse custom history', e);
+      }
+    }
+  }, []);
+
+  const handleCustomInputChange = (text: string) => {
+    const val = text.slice(0, MAX_CUSTOM_CHARS);
+    setCustomInput(val);
+    setCustomError('');
+    localStorage.setItem(STORAGE_CUSTOM_TEXT, val);
+  };
 
   const isCustomMode = mode === 'custom';
   const showTypingArea = !isCustomMode || customReady;
@@ -70,8 +99,6 @@ function Practice() {
   const handleRestart = () => {
     setShowResults(false);
     setCustomReady(false);
-    setCustomInput('');
-    setCustomError('');
     setActiveCustomText('');
     resetTest();
   };
@@ -79,7 +106,6 @@ function Practice() {
   const handleModeChange = (m: PromptMode) => {
     setMode(m);
     setCustomReady(false);
-    setCustomInput('');
     setCustomError('');
     setActiveCustomText('');
     setShowResults(false);
@@ -99,6 +125,14 @@ function Practice() {
     setCustomError('');
     setActiveCustomText(clean);
     setCustomReady(true);
+
+    // Update History (Dedupe, max 5)
+    setCustomHistory(prev => {
+      const filtered = prev.filter(t => t !== clean);
+      const nextHistory = [clean, ...filtered].slice(0, 5);
+      localStorage.setItem(STORAGE_CUSTOM_HISTORY, JSON.stringify(nextHistory));
+      return nextHistory;
+    });
   };
 
   return (
@@ -125,10 +159,7 @@ function Practice() {
             className="w-full h-40 bg-bg-secondary/40 border border-main-sub/10 rounded-xl p-4 text-text-primary font-mono text-sm resize-none outline-none focus:border-main/30 transition-colors"
             placeholder="Paste any English text here..."
             value={customInput}
-            onChange={(e) => {
-              setCustomInput(e.target.value.slice(0, MAX_CUSTOM_CHARS));
-              setCustomError('');
-            }}
+            onChange={(e) => handleCustomInputChange(e.target.value)}
           />
           <div className="flex items-center justify-between mt-2">
             <span className={`text-[10px] font-mono ${customInput.length > MAX_CUSTOM_CHARS * 0.9 ? 'text-error' : 'text-main-sub'}`}>
@@ -145,6 +176,30 @@ function Practice() {
           >
             Start Typing
           </button>
+
+          {/* History Section */}
+          {customHistory.length > 0 && (
+            <div className="mt-8">
+              <div className="flex items-center gap-2 text-main-sub mb-3">
+                <History size={14} />
+                <span className="text-[10px] uppercase tracking-widest">Recent Custom Texts</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {customHistory.map((historyText, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleCustomInputChange(historyText)}
+                    className="w-full text-left px-4 py-3 rounded-lg bg-bg-secondary/20 border border-main-sub/5 hover:border-main/20 hover:bg-main/5 group transition-all flex items-center gap-3"
+                  >
+                    <Clock size={12} className="text-main-sub group-hover:text-main opacity-50 shrink-0" />
+                    <span className="font-mono text-xs text-text-secondary group-hover:text-text-primary truncate">
+                      {historyText.length > 100 ? `${historyText.slice(0, 100)}...` : historyText}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
