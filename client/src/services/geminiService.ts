@@ -17,8 +17,12 @@ export async function generateTypingContent(options: GeminiRequestOptions, onTim
         if (onTimeout) onTimeout();
     }, 20000); // Wait 20s overall for the server since it tries fallbacks
 
+    // When deployed on Vercel, relative /api calls would hit Vercel (405).
+    // Use VITE_SERVER_URL to point to the Render backend when set.
+    const serverBase = import.meta.env.VITE_SERVER_URL || '';
+
     try {
-        const response = await fetch('/api/generate-typing-text', {
+        const response = await fetch(`${serverBase}/api/generate-typing-text`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(options),
