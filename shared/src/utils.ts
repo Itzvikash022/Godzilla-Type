@@ -27,7 +27,7 @@ export function calculateNetWPM(charsTyped: number, errors: number, timeElapsedM
  * Calculate accuracy percentage
  */
 export function calculateAccuracy(correctChars: number, totalChars: number): number {
-  if (totalChars <= 0) return 100;
+  if (totalChars <= 0) return 0;
   return Math.round((correctChars / totalChars) * 10000) / 100;
 }
 

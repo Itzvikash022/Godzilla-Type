@@ -182,6 +182,24 @@ function Room() {
       settings: { textMode: mode },
     });
   };
+  const handleUpdateRandomStartTime = (enabled: boolean) => {
+    emit(SocketEvents.UPDATE_SETTINGS, {
+      roomCode: code,
+      settings: { randomStartTime: enabled },
+    });
+  };
+  const handleStartRandom = () => {
+    const durations = [15, 30, 60, 120];
+    const modes: PromptMode[] = ['words', 'sentences', 'quote'];
+    const randomDuration = durations[Math.floor(Math.random() * durations.length)];
+    const randomMode = modes[Math.floor(Math.random() * modes.length)];
+
+    emit(SocketEvents.UPDATE_SETTINGS, {
+      roomCode: code,
+      settings: { timerDuration: randomDuration, textMode: randomMode },
+    });
+    emit(SocketEvents.START_RACE, { roomCode: code });
+  };
 
   // Phase 10: Show username modal if name not yet confirmed
   if (!nameConfirmed) {
@@ -266,13 +284,37 @@ function Room() {
                 </div>
               </div>
 
-              {isHost && (
+              {/* Phase 27: Random Start Time Toggle */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-secondary">Random Start Time</span>
                 <button
-                  onClick={handleStartRace}
-                  className="w-full py-4 bg-bg-secondary text-main border border-main/20 rounded hover:bg-main/5 transition-all uppercase tracking-[0.2em] text-sm font-bold"
+                  onClick={() => isHost && handleUpdateRandomStartTime(!room.settings.randomStartTime)}
+                  disabled={!isHost}
+                  className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${room.settings.randomStartTime ? 'bg-main' : 'bg-bg-primary border border-main-sub/20'
+                    } disabled:opacity-30`}
                 >
-                  Start Race
+                  <span
+                    className={`inline-block h-2 w-2 transform rounded-full bg-white transition-transform ${room.settings.randomStartTime ? 'translate-x-5' : 'translate-x-1'
+                      }`}
+                  />
                 </button>
+              </div>
+
+              {isHost && (
+                <div className="flex flex-col gap-3 pt-4">
+                  <button
+                    onClick={handleStartRace}
+                    className="w-full py-4 bg-bg-secondary text-main border border-main/20 rounded hover:bg-main/5 transition-all uppercase tracking-[0.2em] text-sm font-bold"
+                  >
+                    Start Race
+                  </button>
+                  <button
+                    onClick={handleStartRandom}
+                    className="w-full py-3 bg-main/5 text-main-sub border border-main-sub/20 rounded hover:bg-main/10 hover:text-main transition-all uppercase tracking-[0.2em] text-xs font-bold"
+                  >
+                    Start Random
+                  </button>
+                </div>
               )}
             </div>
           </div>

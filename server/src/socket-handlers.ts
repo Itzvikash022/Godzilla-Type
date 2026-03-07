@@ -102,9 +102,14 @@ export function registerSocketHandlers(io: Server) {
       io.to(roomCode).emit(SocketEvents.ROOM_UPDATED, { room: prepared });
 
       // Countdown
-      let count = COUNTDOWN_SECONDS;
+      let count = room.settings.randomStartTime
+        ? Math.floor(Math.random() * 13) // 0 to 12
+        : COUNTDOWN_SECONDS;
+      const isRandom = room.settings.randomStartTime;
+
       const countdown = setInterval(() => {
-        io.to(roomCode).emit(SocketEvents.RACE_COUNTDOWN, { count });
+        const displayCount = (isRandom && count > 0) ? -1 : count;
+        io.to(roomCode).emit(SocketEvents.RACE_COUNTDOWN, { count: displayCount });
         count--;
 
         if (count < 0) {

@@ -39,6 +39,7 @@ export interface RoomSettings {
   wordCount: number;
   teamMode: boolean;
   textMode: import('./promptGenerator.js').PromptMode;
+  randomStartTime: boolean;
 }
 
 export interface Room {

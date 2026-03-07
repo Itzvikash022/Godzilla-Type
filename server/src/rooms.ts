@@ -48,6 +48,7 @@ export function createRoom(hostId: string, hostName: string): Room {
       wordCount: DEFAULT_WORD_COUNT,
       teamMode: false,
       textMode: 'words',
+      randomStartTime: false,
     },
     prompt: '',
     words: [],
