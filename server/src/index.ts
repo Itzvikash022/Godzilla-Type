@@ -11,8 +11,14 @@ import { fileURLToPath } from 'url';
 import os from 'os';
 import { registerSocketHandlers } from './socket-handlers.js';
 import { initDatabase, getPlayerStats, getLeaderboard } from './db.js';
+import { generateTypingTextHandler } from './geminiHandler.js';
+import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load variables from server/.env explicitly
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'; // Fall back to all for easy dev
 const isProduction = process.env.NODE_ENV === 'production';
@@ -44,6 +50,9 @@ app.get('/api/leaderboard', (req, res) => {
   const data = getLeaderboard(limit, duration);
   res.json(data);
 });
+
+// Secure endpoint for AI Generation
+app.post('/api/generate-typing-text', generateTypingTextHandler);
 
 // Catch-all for SPA in production
 if (isProduction) {

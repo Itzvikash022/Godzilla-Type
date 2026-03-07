@@ -207,3 +207,14 @@ body {
   display: none;
   /* Chrome, Safari and Opera */
 }
+
+/* ---- Number Input UI Removal ---- */
+.no-spinner::-webkit-inner-spin-button,
+.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.no-spinner {
+  -moz-appearance: textfield;
+}
