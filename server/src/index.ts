@@ -12,6 +12,7 @@ import os from 'os';
 import { registerSocketHandlers } from './socket-handlers.js';
 import { initDatabase, getPlayerStats, getLeaderboard } from './db.js';
 import { generateTypingTextHandler } from './geminiHandler.js';
+import { geminiRateLimiter } from './geminiLimiter.js';
 import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -51,8 +52,8 @@ app.get('/api/leaderboard', (req, res) => {
   res.json(data);
 });
 
-// Secure endpoint for AI Generation
-app.post('/api/generate-typing-text', generateTypingTextHandler);
+// Secure endpoint for AI Generation (Rate Limited)
+app.post('/api/generate-typing-text', geminiRateLimiter, generateTypingTextHandler);
 
 // Catch-all for SPA in production
 if (isProduction) {

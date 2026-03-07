@@ -114,12 +114,17 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
                             <input
                                 type="number"
                                 min={10}
-                                max={1000}
+                                max={500}
                                 value={wordCount}
                                 onChange={(e) => setWordCount(parseInt(e.target.value) || 200)}
                                 disabled={isGenerating || difficulty === 'Meme'}
                                 className={`w-full bg-bg-secondary/50 border border-main-sub/20 rounded-lg px-4 py-2.5 text-sm font-mono focus:border-main/50 outline-none transition-colors no-spinner ${difficulty === 'Meme' ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
+                            {difficulty !== 'Meme' && (
+                                <p className="text-[9px] uppercase tracking-widest text-main-sub mt-1">
+                                    {wordCount > 200 ? 'Limit: 3 requests / min' : 'Limit: 5 requests / min'}
+                                </p>
+                            )}
                         </div>
 
                         {/* Difficulty */}

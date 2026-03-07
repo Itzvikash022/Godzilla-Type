@@ -42,6 +42,7 @@ function Practice() {
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isAIGenerated, setIsAIGenerated] = useState(false);
   const [isMemeSource, setIsMemeSource] = useState(false);
+  const [isSavingLocal, setIsSavingLocal] = useState(false);
 
   const restartBtnRef = useRef<HTMLButtonElement>(null);
   const resultsRestartBtnRef = useRef<HTMLButtonElement>(null);
@@ -175,6 +176,31 @@ function Practice() {
     });
   };
 
+  const handleSaveCustomLocal = () => {
+    const clean = sanitizeCustomText(customInput);
+    if (clean.length < 10) {
+      setCustomError('Text is too short. Paste at least 10 characters.');
+      return;
+    }
+    if (clean.length > MAX_CUSTOM_CHARS) {
+      setCustomError(`Text too long. Max ${MAX_CUSTOM_CHARS} characters.`);
+      return;
+    }
+    setCustomError('');
+
+    // Save to history exactly like Start Custom, but without launching the race
+    setCustomHistory(prev => {
+      const filtered = prev.filter(t => t !== clean);
+      const nextHistory = [clean, ...filtered].slice(0, 5);
+      localStorage.setItem(STORAGE_CUSTOM_HISTORY, JSON.stringify(nextHistory));
+      return nextHistory;
+    });
+
+    // Provide visual feedback
+    setIsSavingLocal(true);
+    setTimeout(() => setIsSavingLocal(false), 2000);
+  };
+
   const handleAIGenerated = (text: string, isMeme: boolean) => {
     handleCustomInputChange(text, true, isMeme);
   };
@@ -228,13 +254,25 @@ function Practice() {
               <span className="text-[10px] text-error uppercase tracking-widest">{customError}</span>
             )}
           </div>
-          <button
-            onClick={handleStartCustom}
-            disabled={customInput.trim().length < 10}
-            className="mt-4 w-full py-3 bg-main/5 text-main border border-main/20 rounded hover:bg-main/10 transition-all text-xs uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            Start Typing
-          </button>
+          <div className="mt-4 flex gap-4 w-full">
+            <button
+              onClick={handleSaveCustomLocal}
+              disabled={customInput.trim().length < 10 || isSavingLocal}
+              className={`w-1/3 py-3 border rounded text-xs uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed
+                ${isSavingLocal
+                  ? 'bg-main text-bg-primary border-main'
+                  : 'bg-transparent text-main-sub border-main-sub/20 hover:border-main/50 hover:text-main'}`}
+            >
+              {isSavingLocal ? 'Saved!' : 'Save for Later'}
+            </button>
+            <button
+              onClick={handleStartCustom}
+              disabled={customInput.trim().length < 10}
+              className="flex-1 py-3 bg-main/5 text-main border border-main/20 rounded hover:bg-main/10 transition-all text-xs uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Start Typing
+            </button>
+          </div>
 
           {/* History Section */}
           {customHistory.length > 0 && (
