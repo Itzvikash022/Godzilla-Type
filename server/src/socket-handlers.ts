@@ -10,6 +10,7 @@ import {
   PlayerProgressPayload,
   AssignTeamPayload,
   UpdateSettingsPayload,
+  ChatMessagePayload,
   COUNTDOWN_SECONDS,
 } from '@godzilla-type/shared';
 import {
@@ -81,6 +82,19 @@ export function registerSocketHandlers(io: Server) {
       if (updated) {
         io.to(payload.roomCode).emit(SocketEvents.ROOM_UPDATED, { room: updated });
       }
+    });
+
+    // ---- CHAT MESSAGE ----
+    socket.on(SocketEvents.CHAT_MESSAGE, (payload: ChatMessagePayload) => {
+      const room = getRoomByCode(payload.roomCode);
+      if (!room) return;
+
+      // Ensure the sender is actually in the room
+      const isPlayerInRoom = room.players.some((p) => p.id === socket.id);
+      if (!isPlayerInRoom) return;
+
+      // Broadcast message to everyone in the room
+      io.to(payload.roomCode).emit(SocketEvents.CHAT_MESSAGE, payload);
     });
 
     // ---- ASSIGN TEAM ----

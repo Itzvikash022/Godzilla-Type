@@ -139,6 +139,14 @@ export interface ErrorData {
   message: string;
 }
 
+export interface ChatMessagePayload {
+  roomCode: string;
+  playerId: string;
+  playerName: string;
+  text: string;
+  timestamp: number;
+}
+
 // ---- Socket Events ----
 
 export const SocketEvents = {
@@ -161,5 +169,6 @@ export const SocketEvents = {
   RACE_FINISHED: 'race-finished',
   PLAYER_JOINED: 'player-joined',
   PLAYER_LEFT: 'player-left',
+  CHAT_MESSAGE: 'chat-message',
   ERROR: 'error',
 } as const;

@@ -1,18 +1,7 @@
 /**
- * Deterministic player color assignment based on username.
- * Uses a simple djb2 hash to pick a consistent color from a palette.
+ * Deterministic player color assignment based on username and connection ID.
+ * Generates an HSL color strictly from the hash to allow 360 unique variants.
  */
-
-const PLAYER_COLOR_PALETTE = [
-    '#60a5fa', // blue
-    '#4ade80', // green
-    '#fb923c', // orange
-    '#a78bfa', // purple
-    '#22d3ee', // cyan
-    '#f472b6', // pink
-    '#facc15', // yellow
-    '#f87171', // red
-];
 
 function generateHash(str: string): number {
     let hash = 0;
@@ -21,7 +10,7 @@ function generateHash(str: string): number {
         hash = Math.imul(31, hash) + str.charCodeAt(i) | 0;
     }
 
-    // MurmurHash3 finalizer (avalanche) to perfectly distribute similar strings (like Player1 vs Player2)
+    // MurmurHash3 finalizer (avalanche)
     hash ^= hash >>> 16;
     hash = Math.imul(hash, 0x85ebca6b);
     hash ^= hash >>> 13;
@@ -33,6 +22,8 @@ function generateHash(str: string): number {
 
 export function hashColor(name: string, uniqueId?: string): string {
     const inputString = name + (uniqueId || '');
-    const index = generateHash(inputString) % PLAYER_COLOR_PALETTE.length;
-    return PLAYER_COLOR_PALETTE[index];
+    const hue = generateHash(inputString) % 360;
+
+    // Saturation 75%, Lightness 65% ensures nice bright pastel/neon colors that contrast well on dark mode
+    return `hsl(${hue}, 75%, 65%)`;
 }

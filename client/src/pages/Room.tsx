@@ -9,6 +9,7 @@ import ProgressBar from '../components/ProgressBar';
 import Countdown from '../components/Countdown';
 import Leaderboard from '../components/Leaderboard';
 import TimerSelector from '../components/TimerSelector';
+import Chatbox from '../components/Chatbox';
 import { saveResult } from '../lib/db';
 import { hashColor } from '../lib/playerColors';
 import { triggerCloudSync } from '../components/SyncManager';
@@ -26,6 +27,7 @@ import type {
   CountdownData,
   RaceResultsData,
   PromptMode,
+  ChatMessagePayload,
 } from '@godzilla-type/shared';
 
 function Room() {
@@ -44,6 +46,7 @@ function Room() {
   const [raceData, setRaceData] = useState<RaceStartData | null>(null);
   const [raceResults, setRaceResults] = useState<RaceResultsData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [messages, setMessages] = useState<ChatMessagePayload[]>([]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const playerName = nameInput.trim() || 'Player1';
@@ -129,6 +132,10 @@ function Room() {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     }));
 
+    cleanups.push(on(SocketEvents.CHAT_MESSAGE, (msg: ChatMessagePayload) => {
+      setMessages((prev) => [...prev, msg]);
+    }));
+
     if (code && playerName) {
       emit(SocketEvents.JOIN_ROOM, { roomCode: code, playerName });
     }
@@ -199,6 +206,15 @@ function Room() {
       settings: { timerDuration: randomDuration, textMode: randomMode },
     });
     emit(SocketEvents.START_RACE, { roomCode: code });
+  };
+  const handleSendMessage = (text: string) => {
+    emit(SocketEvents.CHAT_MESSAGE, {
+      roomCode: code,
+      playerId: currentPlayerId,
+      playerName,
+      text,
+      timestamp: Date.now(),
+    });
   };
 
   // Phase 10: Show username modal if name not yet confirmed
@@ -317,26 +333,35 @@ function Room() {
                 </div>
               )}
             </div>
+
+            {/* Players Section under Settings */}
+            <div className="space-y-4 pt-4 border-t border-main-sub/10 mt-8">
+              <h2 className="text-sm uppercase tracking-[0.3em] text-main-sub pb-2 border-b border-main-sub/10">Players ({players.length})</h2>
+              <div className="grid gap-2">
+                {players.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-main-sub/5">
+                    <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: hashColor(p.name, p.id) }}>
+                      {p.name} {p.isHost && <Crown size={12} className="text-main-sub" />}
+                    </span>
+                    {room.settings.teamMode && (isHost || p.id === currentPlayerId) && (
+                      <div className="flex gap-2">
+                        <button onClick={() => handleAssignTeam(p.id, TeamColor.RED)} className={`text-[10px] uppercase px-2 py-0.5 rounded ${p.team === TeamColor.RED ? 'bg-red-500/20 text-red-500' : 'text-main-sub'}`}>Red</button>
+                        <button onClick={() => handleAssignTeam(p.id, TeamColor.BLUE)} className={`text-[10px] uppercase px-2 py-0.5 rounded ${p.team === TeamColor.BLUE ? 'bg-blue-500/20 text-blue-500' : 'text-main-sub'}`}>Blue</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Players Column */}
-          <div className="space-y-8">
-            <h2 className="text-sm uppercase tracking-[0.3em] text-main-sub border-b border-main-sub/10 pb-2">Players ({players.length})</h2>
-            <div className="grid gap-2">
-              {players.map((p) => (
-                <div key={p.id} className="flex items-center justify-between py-2 border-b border-main-sub/5">
-                  <span className="text-sm font-medium" style={{ color: hashColor(p.name, p.id) }}>
-                    {p.name} {p.isHost && <Crown size={10} className="inline mb-0.5" />}
-                  </span>
-                  {room.settings.teamMode && (isHost || p.id === currentPlayerId) && (
-                    <div className="flex gap-2">
-                      <button onClick={() => handleAssignTeam(p.id, TeamColor.RED)} className={`text-[10px] uppercase px-2 py-0.5 rounded ${p.team === TeamColor.RED ? 'bg-red-500/20 text-red-500' : 'text-main-sub'}`}>Red</button>
-                      <button onClick={() => handleAssignTeam(p.id, TeamColor.BLUE)} className={`text-[10px] uppercase px-2 py-0.5 rounded ${p.team === TeamColor.BLUE ? 'bg-blue-500/20 text-blue-500' : 'text-main-sub'}`}>Blue</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+          {/* Chatbox Column (Right Side) */}
+          <div className="h-full min-h-[400px]">
+            <Chatbox
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              currentPlayerId={currentPlayerId}
+            />
           </div>
         </div>
       )}
