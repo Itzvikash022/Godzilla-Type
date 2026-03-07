@@ -130,6 +130,10 @@ export function registerSocketHandlers(io: Server) {
           clearInterval(countdown);
           const racing = startRace(roomCode);
           if (racing) {
+            console.log(`🏁 Starting race in ${roomCode}. Generated prompt length: ${racing.prompt.length}, Words count: ${racing.words.length}`);
+            if (racing.prompt.length === 0) {
+              console.error(`🚨 ALERT: Racing prompt is empty. Data import logic might have failed.`);
+            }
             io.to(roomCode).emit(SocketEvents.RACE_START, {
               prompt: racing.prompt,
               words: racing.words,

@@ -121,6 +121,7 @@ function Room() {
       setCountdown(null);
       setRaceResults(null);
       engine.resetTest(data.words, data.prompt);
+      engine.startTimer(data.startTime);
     }));
 
     cleanups.push(on(SocketEvents.RACE_PROGRESS, (data: { players: Player[] }) => {
@@ -377,7 +378,21 @@ function Room() {
 
           {/* Center: Typing Area */}
           <div className="flex-1 flex flex-col items-center">
-            <div className="mb-8 font-mono text-3xl text-main">{engine.timeLeft}s</div>
+            <div className="mb-4 flex gap-10 font-mono text-xl animate-fade-in opacity-50">
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">wpm</span>
+                <span className="text-main">{engine.netWpm}</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">acc</span>
+                <span className="text-main">{engine.accuracy}%</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">time</span>
+                <span className="text-main">{engine.timeLeft}s</span>
+              </div>
+            </div>
+
             <TypingArea
               prompt={engine.prompt}
               charStates={engine.charStates}
@@ -385,11 +400,6 @@ function Room() {
               onKeyDown={engine.handleKeyPress}
               disabled={engine.isFinished}
             />
-            {/* Live Stats */}
-            <div className="mt-8 flex gap-8 text-sm opacity-60">
-              <div>WPM: <span className="text-main">{engine.netWpm}</span></div>
-              <div>ACC: <span className="text-main">{engine.accuracy}%</span></div>
-            </div>
           </div>
         </div>
       )}

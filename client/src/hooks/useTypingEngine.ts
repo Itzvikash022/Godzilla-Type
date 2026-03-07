@@ -119,6 +119,7 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
   const durationRef = useRef(duration);
   const typingTimeoutRef = useRef<number | null>(null);
   const extraCharsRef = useRef<Record<number, string>>({});
+  const hasFiredFinishRef = useRef(false);
   // Track word boundaries for fast lookup
   const wordBoundariesRef = useRef<{ start: number; end: number }[]>([]);
 
@@ -184,6 +185,7 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
     const states: CharState[] = p.split('').map((_, i) => (i === 0 ? 'current' : 'upcoming'));
     charStatesRef.current = states;
     currentIndexRef.current = 0;
+    hasFiredFinishRef.current = false;
 
     setPrompt(p);
     setWords(w);
@@ -233,6 +235,14 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
         setTimeLeft(remaining);
 
         if (remaining === 0) {
+          if (t === 0) {
+            setStats({
+              wpm: 0,
+              netWpm: 0,
+              accuracy: 0,
+              progress: 0
+            });
+          }
           setIsFinished(true);
           setIsActive(false);
           return;
@@ -264,6 +274,14 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
     setWords(extended.words);
     setCharStates(newStates);
   }, []);
+
+  // ---- External Triggers ---- //
+  const startTimer = useCallback((forceStartTime?: number) => {
+    if (!isActive && !isFinished) {
+      setIsActive(true);
+      startTimeRef.current = forceStartTime || Date.now();
+    }
+  }, [isActive, isFinished]);
 
   // ---- Input Handling (Zero-React-Render Hot Path) ---- //
   const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -469,12 +487,16 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
   }, [stats.wpm, isActive, onProgress, engineState]);
 
   useEffect(() => {
-    if (isFinished) onFinish?.(engineState);
+    if (isFinished && !hasFiredFinishRef.current) {
+      hasFiredFinishRef.current = true;
+      onFinish?.(engineState);
+    }
   }, [isFinished, onFinish, engineState]);
 
   return {
     ...engineState,
     handleKeyPress,
-    resetTest
+    resetTest,
+    startTimer,
   };
 }

@@ -72,7 +72,7 @@ function LocalTab({ duration }: { duration: number | null }) {
                 <thead>
                     <tr>
                         <th className="w-12 text-center">#</th>
-                        <th>player</th>
+                        <th className="text-left w-full">player</th>
                         <th className="text-right cursor-pointer" onClick={() => handleSort('bestWpm')}>best wpm<SortIcon active={sortBy === 'bestWpm'} desc={sortDesc} /></th>
                         <th className="text-right cursor-pointer" onClick={() => handleSort('avgWpm')}>avg wpm<SortIcon active={sortBy === 'avgWpm'} desc={sortDesc} /></th>
                         <th className="text-right cursor-pointer" onClick={() => handleSort('bestAccuracy')}>accuracy<SortIcon active={sortBy === 'bestAccuracy'} desc={sortDesc} /></th>
@@ -150,7 +150,7 @@ function CloudTab({ duration }: { duration: number | null }) {
                 <thead>
                     <tr>
                         <th className="w-12 text-center">#</th>
-                        <th>player</th>
+                        <th className="text-left w-full">player</th>
                         <th className="text-right cursor-pointer" onClick={() => handleSort('maxWpm')}>best wpm<SortIcon active={sortBy === 'maxWpm'} desc={sortDesc} /></th>
                         <th className="text-right cursor-pointer" onClick={() => handleSort('avgWpm')}>avg wpm<SortIcon active={sortBy === 'avgWpm'} desc={sortDesc} /></th>
                         <th className="text-right cursor-pointer" onClick={() => handleSort('avgAccuracy')}>accuracy<SortIcon active={sortBy === 'avgAccuracy'} desc={sortDesc} /></th>

@@ -110,10 +110,23 @@ export const submitRaceResult = mutation({
         });
 
         // Update playerStats
-        const stats = await ctx.db
+        let stats = await ctx.db
             .query('playerStats')
             .filter((q) => q.eq(q.field('userId'), user._id))
             .first();
+
+        // If playerStats doesn't exist (account created before stats table was introduced), backfill it.
+        if (!stats) {
+            const newStatsId = await ctx.db.insert('playerStats', {
+                userId: user._id,
+                username: user.username,
+                avgWpm: 0,
+                maxWpm: 0,
+                avgAccuracy: 0,
+                racesPlayed: 0,
+            });
+            stats = await ctx.db.get(newStatsId);
+        }
 
         if (stats && args.mode !== 'custom') {
             const newRacesPlayed = stats.racesPlayed + 1;

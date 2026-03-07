@@ -38,7 +38,8 @@ export async function initDatabase() {
       finish_order INTEGER NOT NULL,
       room_code TEXT NOT NULL,
       timer_duration INTEGER NOT NULL,
-      timestamp INTEGER NOT NULL
+      timestamp INTEGER NOT NULL,
+      mode TEXT DEFAULT 'words'
     );
   `);
 

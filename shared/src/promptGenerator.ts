@@ -19,9 +19,13 @@ interface Quote {
   author: string;
 }
 
-const WORDS: string[] = (wordsData as any).words || (wordsData as any).language || [];
-const SENTENCES: string[] = (sentencesData as any).sentences || [];
-const QUOTES: Quote[] = (quotesData as any).quotes || [];
+const wData: any = (wordsData as any).default || wordsData;
+const sData: any = (sentencesData as any).default || sentencesData;
+const qData: any = (quotesData as any).default || quotesData;
+
+const WORDS: string[] = wData.words || wData.language || [];
+const SENTENCES: string[] = sData.sentences || (Array.isArray(sData) ? sData : []);
+const QUOTES: Quote[] = qData.quotes || (Array.isArray(qData) ? qData : []);
 
 // --- Helpers ---
 

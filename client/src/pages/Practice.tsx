@@ -270,7 +270,7 @@ function Practice() {
       )}
 
       {/* Main Stats — Subtle top row */}
-      {!isFinished && currentIndex > 0 && !showResults && showTypingArea && (
+      {!isFinished && !showResults && showTypingArea && (
         <div className="mb-4 flex gap-10 font-mono text-xl animate-fade-in opacity-50">
           <div className="flex flex-col items-center">
             <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">wpm</span>

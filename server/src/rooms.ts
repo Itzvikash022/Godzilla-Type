@@ -213,6 +213,16 @@ export function finishRace(code: string): Room | null {
   room.state = RaceState.FINISHED;
   room.endTime = Date.now();
 
+  for (const player of room.players) {
+    if (player.charsTyped === 0) {
+      player.accuracy = 0;
+    }
+    // ensure everyone is marked finished
+    if (!player.isFinished) {
+      player.isFinished = true;
+    }
+  }
+
   return room;
 }
 
