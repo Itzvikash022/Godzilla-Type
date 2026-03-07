@@ -14,16 +14,25 @@ const PLAYER_COLOR_PALETTE = [
     '#f87171', // red
 ];
 
-function djb2Hash(str: string): number {
-    let hash = 5381;
+function generateHash(str: string): number {
+    let hash = 0;
     for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) + hash + str.charCodeAt(i);
-        hash = hash & hash; // Convert to 32-bit integer
+        // Java-style string hash
+        hash = Math.imul(31, hash) + str.charCodeAt(i) | 0;
     }
+
+    // MurmurHash3 finalizer (avalanche) to perfectly distribute similar strings (like Player1 vs Player2)
+    hash ^= hash >>> 16;
+    hash = Math.imul(hash, 0x85ebca6b);
+    hash ^= hash >>> 13;
+    hash = Math.imul(hash, 0xc2b2ae35);
+    hash ^= hash >>> 16;
+
     return Math.abs(hash);
 }
 
-export function hashColor(name: string): string {
-    const index = djb2Hash(name) % PLAYER_COLOR_PALETTE.length;
+export function hashColor(name: string, uniqueId?: string): string {
+    const inputString = name + (uniqueId || '');
+    const index = generateHash(inputString) % PLAYER_COLOR_PALETTE.length;
     return PLAYER_COLOR_PALETTE[index];
 }

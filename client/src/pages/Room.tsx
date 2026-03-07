@@ -325,7 +325,7 @@ function Room() {
             <div className="grid gap-2">
               {players.map((p) => (
                 <div key={p.id} className="flex items-center justify-between py-2 border-b border-main-sub/5">
-                  <span className="text-sm font-medium" style={{ color: hashColor(p.name) }}>
+                  <span className="text-sm font-medium" style={{ color: hashColor(p.name, p.id) }}>
                     {p.name} {p.isHost && <Crown size={10} className="inline mb-0.5" />}
                   </span>
                   {room.settings.teamMode && (isHost || p.id === currentPlayerId) && (

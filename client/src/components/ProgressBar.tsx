@@ -7,7 +7,7 @@ interface ProgressBarProps {
 }
 
 function ProgressBar({ player, isCurrentUser }: ProgressBarProps) {
-  const color = hashColor(player.name);
+  const color = hashColor(player.name, player.id);
 
   return (
     <div className={`w-full py-2 flex items-center gap-4 transition-opacity ${player.isFinished ? 'opacity-50' : 'opacity-100'}`}>

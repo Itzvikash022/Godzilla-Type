@@ -59,7 +59,7 @@ function Leaderboard({ players, teamScores }: LeaderboardProps) {
                     {player.team !== TeamColor.NONE && (
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TEAM_COLORS[player.team].bg }} />
                     )}
-                    <span style={{ color: hashColor(player.name) }}>{player.name}</span>
+                    <span style={{ color: hashColor(player.name, player.id) }}>{player.name}</span>
                   </div>
                 </td>
                 <td className="text-right font-mono text-xl text-main">{player.netWpm}</td>
