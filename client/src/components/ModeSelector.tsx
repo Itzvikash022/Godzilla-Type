@@ -1,4 +1,5 @@
-import type { PromptMode } from '@godzilla-type/shared';
+import React from 'react';
+import { type PromptMode } from '../typing/promptGenerator';
 
 interface ModeSelectorProps {
   selectedMode: PromptMode;
@@ -18,13 +19,13 @@ const MODES: { value: PromptMode; label: string }[] = [
 
 const DURATIONS = [15, 30, 60, 120];
 
-function ModeSelector({
+const ModeSelector = React.memo(({
   selectedMode,
   onSelectMode,
   selectedDuration,
   onSelectDuration,
   disabled
-}: ModeSelectorProps) {
+}: ModeSelectorProps) => {
   return (
     <div className="flex items-center gap-6 bg-bg-secondary/40 rounded-xl px-4 py-2 animate-fade-in border border-main-sub/5">
       {/* Mode Select */}
@@ -58,6 +59,6 @@ function ModeSelector({
       </div>
     </div>
   );
-}
+});
 
 export default ModeSelector;

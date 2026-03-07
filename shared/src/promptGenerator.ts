@@ -4,9 +4,9 @@
 // Large dataset-backed prompt generation for multiple typing modes.
 // All datasets are imported statically (bundler resolves at build time).
 
-import wordsData from '../../data/words.json' with { type: 'json' };
-import sentencesData from '../../data/sentences.json' with { type: 'json' };
-import quotesData from '../../data/quotes.json' with { type: 'json' };
+import wordsData from '../../data/words.json';
+import sentencesData from '../../data/sentences.json';
+import quotesData from '../../data/quotes.json';
 
 export type PromptMode = 'words' | 'sentences' | 'paragraph' | 'quote' | 'custom';
 
@@ -15,9 +15,9 @@ interface Quote {
   author: string;
 }
 
-const WORDS: string[] = wordsData as string[];
-const SENTENCES: string[] = sentencesData as string[];
-const QUOTES: Quote[] = quotesData as Quote[];
+const WORDS: string[] = (wordsData as any).words || (wordsData as any).language || [];
+const SENTENCES: string[] = (sentencesData as any).sentences || [];
+const QUOTES: Quote[] = (quotesData as any).quotes || [];
 
 // --- Helpers ---
 

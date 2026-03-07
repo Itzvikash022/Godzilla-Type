@@ -5,7 +5,7 @@
 
 export interface GeminiRequestOptions {
     theme: string;
-    difficulty: 'Easy' | 'Medium' | 'Hard';
+    difficulty: 'Easy' | 'Medium' | 'Hard' | 'Meme';
     wordCount: number;
     punctuation: boolean;
 }

@@ -64,28 +64,7 @@ body {
   color: #ca4754;
 }
 
-.char.current::after {
-  content: '';
-  position: absolute;
-  left: -1px;
-  top: 10%;
-  width: 2px;
-  height: 80%;
-  background-color: #e2b714;
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0;
-  }
-}
+/* .char.current::after REMOVED — was causing double cursor with .caret div */
 
 /* ---- Custom Components ---- */
 .glass-card {
@@ -208,13 +187,75 @@ body {
   /* Chrome, Safari and Opera */
 }
 
+/* ---- Typing Area (Monkeytype Style) ---- */
+.typing-container {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  line-height: 1.5;
+  color: #646669;
+  position: relative;
+  transition: opacity 0.3s;
+}
+
+.word {
+  margin: 0.25em 0.3em;
+  display: inline-block;
+  position: relative;
+}
+
+.char {
+  position: relative;
+  transition: color 0.05s;
+}
+
+.char.extra {
+  color: #ca4754 !important;
+  opacity: 0.6;
+}
+
+.char.upcoming {
+  color: #646669;
+}
+
+.char.correct {
+  color: #d1d0c5;
+}
+
+.char.incorrect {
+  color: #ca4754;
+}
+
+/* Caret / Cursor */
+.caret {
+  position: absolute;
+  width: 2px;
+  height: 1.5em;
+  background: #e2b714;
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 10;
+  /* Subtle position transition — smooth without ghosting */
+  transition: left 0.08s ease, top 0.08s ease;
+}
+
+.caret.blinking {
+  animation: caretBlink 1s infinite step-end;
+}
+
+@keyframes caretBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
 /* ---- Number Input UI Removal ---- */
+.no-spinner {
+  appearance: none;
+  -moz-appearance: textfield;
+}
+
 .no-spinner::-webkit-inner-spin-button,
 .no-spinner::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
-}
-
-.no-spinner {
-  -moz-appearance: textfield;
 }

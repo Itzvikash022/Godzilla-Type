@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Sparkles, X, AlertCircle, Loader2, ChevronDown } from 'lucide-react';
+import { Sparkles, X, AlertCircle, Loader2, ChevronDown, Lock } from 'lucide-react';
 import { generateTypingContent, GeminiRequestOptions } from '../services/geminiService';
+import memesData from '../data/memes.json';
 
 interface AIContentModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onGenerated: (text: string) => void;
+    onGenerated: (text: string, isMeme: boolean) => void;
 }
 
 export default function AIContentModal({ isOpen, onClose, onGenerated }: AIContentModalProps) {
@@ -17,6 +18,9 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [pin, setPin] = useState('');
+    const [isPinCorrect, setIsPinCorrect] = useState(false);
+    const [pinError, setPinError] = useState(false);
 
     if (!isOpen) return null;
 
@@ -26,14 +30,21 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
         setError(null);
 
         try {
-            const text = await generateTypingContent({
-                theme: theme.trim() || 'General random topic',
-                wordCount,
-                difficulty,
-                punctuation
-            });
+            let text = '';
 
-            onGenerated(text);
+            if (difficulty === 'Meme') {
+                const randomIndex = Math.floor(Math.random() * memesData.length);
+                text = memesData[randomIndex];
+            } else {
+                text = await generateTypingContent({
+                    theme: theme.trim() || 'General random topic',
+                    wordCount,
+                    difficulty,
+                    punctuation
+                });
+            }
+
+            onGenerated(text, difficulty === 'Meme');
             onClose();
         } catch (err: any) {
             setError(err?.message || 'Failed to generate content. Check your API key or try again.');
@@ -87,9 +98,9 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
                             type="text"
                             value={theme}
                             onChange={(e) => setTheme(e.target.value)}
-                            disabled={isGenerating}
-                            placeholder="e.g. Space exploration, History of Rome..."
-                            className="w-full bg-bg-secondary/50 border border-main-sub/20 rounded-lg px-4 py-2.5 text-sm font-mono focus:border-main/50 outline-none transition-colors placeholder:text-main-sub/30"
+                            disabled={isGenerating || difficulty === 'Meme'}
+                            placeholder={difficulty === 'Meme' ? 'Locked in Meme Mode' : 'e.g. Space exploration, History of Rome...'}
+                            className={`w-full bg-bg-secondary/50 border border-main-sub/20 rounded-lg px-4 py-2.5 text-sm font-mono focus:border-main/50 outline-none transition-colors placeholder:text-main-sub/30 ${difficulty === 'Meme' ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
                     </div>
 
@@ -106,8 +117,8 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
                                 max={1000}
                                 value={wordCount}
                                 onChange={(e) => setWordCount(parseInt(e.target.value) || 200)}
-                                disabled={isGenerating}
-                                className="w-full bg-bg-secondary/50 border border-main-sub/20 rounded-lg px-4 py-2.5 text-sm font-mono focus:border-main/50 outline-none transition-colors no-spinner"
+                                disabled={isGenerating || difficulty === 'Meme'}
+                                className={`w-full bg-bg-secondary/50 border border-main-sub/20 rounded-lg px-4 py-2.5 text-sm font-mono focus:border-main/50 outline-none transition-colors no-spinner ${difficulty === 'Meme' ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
                         </div>
 
@@ -128,19 +139,24 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
                                         {difficulty === 'Easy' && 'Easy'}
                                         {difficulty === 'Medium' && 'Normal'}
                                         {difficulty === 'Hard' && 'Hard'}
+                                        {difficulty === 'Meme' && 'Ohh boiii'}
                                     </span>
                                     <ChevronDown size={14} className={`text-main-sub transition-transform ${isDifficultyOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {isDifficultyOpen && (
                                     <div className="absolute top-full left-0 right-0 mt-2 bg-[#2C2E31] border border-main-sub/20 rounded-lg shadow-xl z-50 overflow-hidden animate-fade-in flex flex-col p-1">
-                                        {(['Easy', 'Medium', 'Hard'] as const).map((opt) => (
+                                        {(['Easy', 'Medium', 'Hard', 'Meme'] as const).map((opt) => (
                                             <button
                                                 key={opt}
                                                 type="button"
                                                 onClick={() => {
                                                     setDifficulty(opt);
                                                     setIsDifficultyOpen(false);
+                                                    if (opt !== 'Meme') {
+                                                        setIsPinCorrect(false);
+                                                        setPin('');
+                                                    }
                                                 }}
                                                 className={`w-full text-left px-3 py-2.5 text-sm font-mono transition-colors hover:bg-main/10 hover:text-main rounded-md
                                                 ${difficulty === opt ? 'bg-main/10 text-main font-bold' : 'text-text-primary'}`}
@@ -148,6 +164,7 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
                                                 {opt === 'Easy' && 'Easy'}
                                                 {opt === 'Medium' && 'Normal'}
                                                 {opt === 'Hard' && 'Hard'}
+                                                {opt === 'Meme' && 'Ohh boiii'}
                                             </button>
                                         ))}
                                     </div>
@@ -156,8 +173,39 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
                         </div>
                     </div>
 
+                    {/* PIN Entry for Meme Mode */}
+                    {difficulty === 'Meme' && !isPinCorrect && (
+                        <div className="bg-main/5 border border-main/20 rounded-xl p-5 space-y-4 animate-fade-in">
+                            <div className="flex items-center gap-3 text-main">
+                                <Lock size={16} />
+                                <h3 className="text-[10px] uppercase font-bold tracking-widest">Authorized Access Only</h3>
+                            </div>
+                            <div className="space-y-2">
+                                <input
+                                    type="password"
+                                    maxLength={5}
+                                    placeholder="Enter 5-digit PIN"
+                                    value={pin}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setPin(val);
+                                        setPinError(false);
+                                        const secretPin = import.meta.env.VITE_MEME_PIN || '69420';
+                                        if (val === secretPin) {
+                                            setIsPinCorrect(true);
+                                        }
+                                    }}
+                                    className={`w-full bg-bg-primary border ${pinError ? 'border-error' : 'border-main/30'} rounded-lg px-4 py-3 text-center text-lg tracking-[0.5em] font-mono focus:border-main outline-none transition-all placeholder:text-[10px] placeholder:tracking-normal`}
+                                />
+                                {pin.length === 5 && pin !== (import.meta.env.VITE_MEME_PIN || '69420') && (
+                                    <p className="text-[10px] text-error uppercase text-center font-bold tracking-tighter">Incorrect Access Code</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Punctuation */}
-                    <div className="pt-2">
+                    <div className={`pt-2 transition-opacity ${difficulty === 'Meme' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
                         <label className="flex items-center gap-3 cursor-pointer group">
                             <div className="relative">
                                 <input
@@ -180,7 +228,7 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
                     <div className="pt-4 border-t border-main-sub/10">
                         <button
                             type="submit"
-                            disabled={isGenerating || !theme.trim()}
+                            disabled={isGenerating || (difficulty !== 'Meme' && !theme.trim()) || (difficulty === 'Meme' && !isPinCorrect)}
                             className="w-full flex items-center justify-center gap-2 py-3 bg-main/10 text-main border border-main/30 rounded-lg hover:bg-main hover:text-bg-primary transition-all uppercase tracking-[0.2em] font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Sparkles size={14} />

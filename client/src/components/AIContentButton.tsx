@@ -1,3 +1,4 @@
+import React from 'react';
 import { Sparkles } from 'lucide-react';
 
 interface AIContentButtonProps {
@@ -5,7 +6,7 @@ interface AIContentButtonProps {
     disabled?: boolean;
 }
 
-export default function AIContentButton({ onClick, disabled }: AIContentButtonProps) {
+const AIContentButton = React.memo(({ onClick, disabled }: AIContentButtonProps) => {
     return (
         <button
             onClick={onClick}
@@ -23,4 +24,6 @@ export default function AIContentButton({ onClick, disabled }: AIContentButtonPr
             Generate with AI
         </button>
     );
-}
+});
+
+export default AIContentButton;
