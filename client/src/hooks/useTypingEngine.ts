@@ -154,13 +154,18 @@ export function useTypingEngine(options: UseTypingEngineOptions) {
   }
 
   // ---- Reset Logic ---- //
-  const resetTest = useCallback((keepWords = false) => {
+  const resetTest = useCallback((keepWordsOrWords: boolean | string[] = false, explicitPrompt?: string) => {
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
     let w: string[];
     let p: string;
 
-    if (keepWords) {
+    if (Array.isArray(keepWordsOrWords) && explicitPrompt) {
+      // resetTest(words, prompt) — multiplayer race start
+      w = keepWordsOrWords;
+      p = explicitPrompt;
+    } else if (keepWordsOrWords === true) {
+      // keepWords = true — reuse current prompt (after duration change)
       w = wordsRef.current.length ? wordsRef.current : [];
       p = promptRef.current || '';
     } else if (providedWords && providedPrompt) {
