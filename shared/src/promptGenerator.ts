@@ -2,11 +2,16 @@
 // GODZILLA-TYPE — Prompt Generator
 // ==========================================
 // Large dataset-backed prompt generation for multiple typing modes.
-// All datasets are imported statically (bundler resolves at build time).
 
-import wordsData from '../../data/words.json';
-import sentencesData from '../../data/sentences.json';
-import quotesData from '../../data/quotes.json';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { join, dirname } from 'path';
+
+// ESM-safe JSON loading (works on Node 18+ without import assertions)
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const wordsData = JSON.parse(readFileSync(join(__dirname, '../../data/words.json'), 'utf-8'));
+const sentencesData = JSON.parse(readFileSync(join(__dirname, '../../data/sentences.json'), 'utf-8'));
+const quotesData = JSON.parse(readFileSync(join(__dirname, '../../data/quotes.json'), 'utf-8'));
 
 export type PromptMode = 'words' | 'sentences' | 'paragraph' | 'quote' | 'custom';
 
