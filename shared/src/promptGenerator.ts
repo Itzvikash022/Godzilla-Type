@@ -3,15 +3,14 @@
 // ==========================================
 // Large dataset-backed prompt generation for multiple typing modes.
 
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { join, dirname } from 'path';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — import attributes require TS 5.3+ with resolveJsonModule
+import wordsData from '../../data/words.json' with { type: 'json' };
+// @ts-ignore
+import sentencesData from '../../data/sentences.json' with { type: 'json' };
+// @ts-ignore
+import quotesData from '../../data/quotes.json' with { type: 'json' };
 
-// ESM-safe JSON loading (works on Node 18+ without import assertions)
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const wordsData = JSON.parse(readFileSync(join(__dirname, '../../data/words.json'), 'utf-8'));
-const sentencesData = JSON.parse(readFileSync(join(__dirname, '../../data/sentences.json'), 'utf-8'));
-const quotesData = JSON.parse(readFileSync(join(__dirname, '../../data/quotes.json'), 'utf-8'));
 
 export type PromptMode = 'words' | 'sentences' | 'paragraph' | 'quote' | 'custom';
 
