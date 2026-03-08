@@ -28,6 +28,7 @@ import type {
   RaceResultsData,
   PromptMode,
   ChatMessagePayload,
+  MemeMessagePayload,
 } from '@godzilla-type/shared';
 
 function Room() {
@@ -47,6 +48,7 @@ function Room() {
   const [raceResults, setRaceResults] = useState<RaceResultsData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [messages, setMessages] = useState<ChatMessagePayload[]>([]);
+  const [memeMessages, setMemeMessages] = useState<MemeMessagePayload[]>([]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const playerName = nameInput.trim() || 'Player1';
@@ -137,6 +139,14 @@ function Room() {
       setMessages((prev) => [...prev, msg]);
     }));
 
+    cleanups.push(on(SocketEvents.MEME_MESSAGE, (msg: MemeMessagePayload) => {
+      setMemeMessages((prev) => [...prev, msg]);
+    }));
+
+    cleanups.push(on(SocketEvents.MEME_HISTORY, (history: MemeMessagePayload[]) => {
+      setMemeMessages(history); // isHistory flag already set server-side
+    }));
+
     if (code && playerName) {
       emit(SocketEvents.JOIN_ROOM, { roomCode: code, playerName });
     }
@@ -216,6 +226,23 @@ function Room() {
       text,
       timestamp: Date.now(),
     });
+  };
+
+  const handleSendMeme = (meme: { memeId: string; imageUrl: string; soundUrl?: string }) => {
+    const eventId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()}`;
+    const payload: MemeMessagePayload = {
+      eventId,
+      roomCode: code!,
+      playerId: currentPlayerId,
+      playerName,
+      memeId: meme.memeId,
+      imageUrl: meme.imageUrl,
+      soundUrl: meme.soundUrl,
+      timestamp: Date.now(),
+    };
+    emit(SocketEvents.MEME_SEND, payload);
   };
 
   // Phase 10: Show username modal if name not yet confirmed
@@ -357,10 +384,12 @@ function Room() {
           </div>
 
           {/* Chatbox Column (Right Side) */}
-          <div className="h-full min-h-[400px]">
+          <div className="w-full lg:w-[400px] h-[550px] animate-fade-in lg:mt-0 mt-8">
             <Chatbox
               messages={messages}
+              memeMessages={memeMessages}
               onSendMessage={handleSendMessage}
+              onSendMeme={handleSendMeme}
               currentPlayerId={currentPlayerId}
             />
           </div>

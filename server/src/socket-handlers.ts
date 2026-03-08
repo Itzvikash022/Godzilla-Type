@@ -11,6 +11,7 @@ import {
   AssignTeamPayload,
   UpdateSettingsPayload,
   ChatMessagePayload,
+  MemeMessagePayload,
   COUNTDOWN_SECONDS,
 } from '@godzilla-type/shared';
 import {
@@ -30,6 +31,12 @@ import {
   findRoomByPlayerId,
 } from './rooms.js';
 import { saveRaceResult } from './db.js';
+
+// ---- Meme Room State ---- (in-memory, per-room, cleared on restart)
+const memeHistory = new Map<string, MemeMessagePayload[]>(); // roomCode -> last 20 memes
+const memeCooldowns = new Map<string, number>(); // playerId -> lastSentTimestamp
+const MEME_COOLDOWN_MS = 3000;
+const MEME_HISTORY_LIMIT = 20;
 
 export function registerSocketHandlers(io: Server) {
   io.on('connection', (socket: Socket) => {
@@ -236,8 +243,32 @@ export function registerSocketHandlers(io: Server) {
 
       const restarted = restartRace(roomCode);
       if (restarted) {
+        // Clear meme history for the room on restart
+        memeHistory.delete(roomCode);
         io.to(roomCode).emit(SocketEvents.ROOM_UPDATED, { room: restarted });
       }
+    });
+
+    // ---- MEME_SEND ----
+    socket.on(SocketEvents.MEME_SEND, (payload: MemeMessagePayload) => {
+      const now = Date.now();
+      const lastSent = memeCooldowns.get(socket.id) ?? 0;
+
+      // Enforce 3-second per-user cooldown
+      if (now - lastSent < MEME_COOLDOWN_MS) {
+        socket.emit(SocketEvents.ERROR, { message: 'Please wait before sending another meme.' });
+        return;
+      }
+      memeCooldowns.set(socket.id, now);
+
+      // Store in history ring buffer
+      const history = memeHistory.get(payload.roomCode) ?? [];
+      history.push(payload);
+      if (history.length > MEME_HISTORY_LIMIT) history.shift();
+      memeHistory.set(payload.roomCode, history);
+
+      // Broadcast to all peers (including sender for sync)
+      io.to(payload.roomCode).emit(SocketEvents.MEME_MESSAGE, payload);
     });
 
     function handleLeavePreviousRoom(socket: Socket, excludeRoomCode?: string) {

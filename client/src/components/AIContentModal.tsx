@@ -144,7 +144,7 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
                                         {difficulty === 'Easy' && 'Easy'}
                                         {difficulty === 'Medium' && 'Normal'}
                                         {difficulty === 'Hard' && 'Hard'}
-                                        {difficulty === 'Meme' && 'Ohh boiii'}
+                                        {difficulty === 'Meme' && 'Yehh boiii'}
                                     </span>
                                     <ChevronDown size={14} className={`text-main-sub transition-transform ${isDifficultyOpen ? 'rotate-180' : ''}`} />
                                 </button>
@@ -169,7 +169,7 @@ export default function AIContentModal({ isOpen, onClose, onGenerated }: AIConte
                                                 {opt === 'Easy' && 'Easy'}
                                                 {opt === 'Medium' && 'Normal'}
                                                 {opt === 'Hard' && 'Hard'}
-                                                {opt === 'Meme' && 'Ohh boiii'}
+                                                {opt === 'Meme' && 'Yehh boiii'}
                                             </button>
                                         ))}
                                     </div>

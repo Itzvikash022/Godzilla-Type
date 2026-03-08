@@ -147,6 +147,18 @@ export interface ChatMessagePayload {
   timestamp: number;
 }
 
+export interface MemeMessagePayload {
+  eventId: string;         // uuid — used for client-side dedup
+  roomCode: string;
+  playerId: string;
+  playerName: string;
+  memeId: string;
+  imageUrl: string;
+  soundUrl?: string;
+  timestamp: number;
+  isHistory?: boolean;     // true when emitted as part of MEME_HISTORY — sound must NOT play
+}
+
 // ---- Socket Events ----
 
 export const SocketEvents = {
@@ -170,5 +182,8 @@ export const SocketEvents = {
   PLAYER_JOINED: 'player-joined',
   PLAYER_LEFT: 'player-left',
   CHAT_MESSAGE: 'chat-message',
+  MEME_SEND: 'meme-send',
+  MEME_MESSAGE: 'meme-message',
+  MEME_HISTORY: 'meme-history',
   ERROR: 'error',
 } as const;

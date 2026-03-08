@@ -38,4 +38,16 @@ export default defineSchema({
         stats60: v.optional(v.object({ maxWpm: v.number(), avgWpm: v.number(), avgAccuracy: v.number(), racesPlayed: v.number() })),
         stats120: v.optional(v.object({ maxWpm: v.number(), avgWpm: v.number(), avgAccuracy: v.number(), racesPlayed: v.number() })),
     }).index('by_username', ['username']),
+
+    memes: defineTable({
+        memeId: v.string(),                   // unique slug or uuid
+        imageUrl: v.string(),                 // Cloudinary secure URL
+        soundUrl: v.optional(v.string()),     // Optional Cloudinary audio URL
+        uploadedBy: v.optional(v.string()),   // Clerk userId (optional for anon)
+        uploaderName: v.optional(v.string()), // Optional for anon
+        createdAt: v.number(),
+        weekNumber: v.optional(v.number()),   // Legacy
+        type: v.string(),                     // 'builtin' | 'user'
+    })
+        .index('by_uploader', ['uploadedBy']),
 });
