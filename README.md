@@ -6,7 +6,7 @@ A production-ready full-stack web application inspired by Monkeytype, specifical
 
 ## ✨ Features
 
-- ⌨️ **Solo Practice** — Timed typing tests (15s / 30s / 60s) with 4 text modes: Words, Sentences, Paragraph, Quote.
+- ⌨️ **Solo Practice** — Timed typing tests (15s / 30s / 60s) with 3 core text modes: Words, Paragraph, and Quote.
 - 🏁 **Multiplayer Racing** — Real-time races with live progress bars and active WPM decay.
 - 👥 **Team Mode** — Assign players to Red/Blue teams for collective net WPM scoring.
 - 🔒 **Private Rooms** — Unique 6-character room codes for private, isolated races.
@@ -86,6 +86,7 @@ pnpm dev
 - **Multiplayer Randomizer**: Added ability for hosts to instantly start races with randomized time and text modes.
 - **Lobby Ready & Kick System**: Implemented mandatory "Ready" status for all players. Hosts can moderate rooms with a "Kick" button, immediately evicting disruptive players from the session.
 - **Persistent Practice Settings**: The solo practice mode now remembers your last selected duration and text mode perfectly across refreshes, so you never have to re-configure your training setup.
+- **Text Mode Consolidation**: Removed "Sentences" mode to minimize training distractions. "Paragraph" mode remains the standard for punctuated, natural-text training.
 - **Random Start Time**: Added a toggle for non-deterministic visual countdowns (0-12s) to heighten challenge focus.
 - **Strategic AI Rate Limiting**: Implemented a highly custom multi-tiered IP-based rate limiter (3/min and 5/min tiers) built from scratch natively, circumventing off-the-shelf express rate limiters for silent delays instead of hard block screens.
 - **Always-on Stats**: Refactored the UI to show WPM, Accuracy, and Timer immediately upon race start, ticking synchronously via Socket.IO regardless of who typed.

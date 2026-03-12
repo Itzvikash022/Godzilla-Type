@@ -221,7 +221,7 @@ function Room() {
   };
   const handleStartRandom = () => {
     const durations = [15, 30, 60, 120];
-    const modes: PromptMode[] = ['words', 'sentences', 'quote'];
+    const modes: PromptMode[] = ['words', 'paragraph', 'quote'];
     const randomDuration = durations[Math.floor(Math.random() * durations.length)];
     const randomMode = modes[Math.floor(Math.random() * modes.length)];
 
@@ -325,7 +325,7 @@ function Room() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-text-secondary">Text Mode</span>
                 <div className="flex items-center gap-2">
-                  {(['words', 'sentences', 'quote'] as PromptMode[]).map((m) => (
+                  {(['words', 'paragraph', 'quote'] as PromptMode[]).map((m) => (
                     <button
                       key={m}
                       onClick={() => isHost && handleUpdateTextMode(m)}
@@ -397,8 +397,8 @@ function Room() {
                 <button
                   onClick={handleToggleReady}
                   className={`px-4 py-1.5 rounded transition-all uppercase tracking-widest text-[10px] font-bold border ${players.find(p => p.id === currentPlayerId)?.isReady
-                      ? 'bg-main/10 text-main border-main/40'
-                      : 'bg-bg-primary text-text-secondary border-main-sub/20 hover:border-main/20'
+                    ? 'bg-main/10 text-main border-main/40'
+                    : 'bg-bg-primary text-text-secondary border-main-sub/20 hover:border-main/20'
                     }`}
                 >
                   {players.find(p => p.id === currentPlayerId)?.isReady ? 'Ready' : 'Not Ready'}

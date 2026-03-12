@@ -12,7 +12,7 @@ import sentencesData from '../../data/sentences.json' with { type: 'json' };
 import quotesData from '../../data/quotes.json' with { type: 'json' };
 
 
-export type PromptMode = 'words' | 'sentences' | 'paragraph' | 'quote' | 'custom';
+export type PromptMode = 'words' | 'paragraph' | 'quote' | 'custom';
 
 interface Quote {
   text: string;
@@ -31,6 +31,11 @@ const QUOTES: Quote[] = qData.quotes || (Array.isArray(qData) ? qData : []);
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function stripPunctuation(text: string): string {
+  // Removes all non-word characters (punctuation, symbols) but preserves letters, numbers and spaces
+  return text.replace(/[^\w\s]|_/g, "").replace(/\s{2,}/g, " ").trim();
 }
 
 function pickMany<T>(arr: T[], count: number): T[] {
@@ -55,18 +60,21 @@ export function generateWords(count: number): { words: string[]; prompt: string 
 /**
  * Generate N random sentences joined into a single prompt.
  */
-export function generateSentences(count: number): { words: string[]; prompt: string } {
+function internalGenerateSentences(count: number, clean = true): { words: string[]; prompt: string } {
   const selected = pickMany(SENTENCES, count);
-  const prompt = selected.join(' ');
+  let prompt = selected.join(' ');
+  if (clean) {
+    prompt = stripPunctuation(prompt);
+  }
   const words = prompt.split(' ');
   return { words, prompt };
 }
 
 /**
- * Generate a paragraph (alias for generateSentences, good default for races).
+ * Generate a paragraph (preserves punctuation from sentences).
  */
 export function generateParagraph(sentenceCount: number): { words: string[]; prompt: string } {
-  return generateSentences(sentenceCount);
+  return internalGenerateSentences(sentenceCount, false);
 }
 
 /**
@@ -91,8 +99,6 @@ export function generatePrompt(
   switch (mode) {
     case 'words':
       return generateWords(amount);
-    case 'sentences':
-      return generateSentences(amount);
     case 'paragraph':
       return generateParagraph(amount);
     case 'quote':
@@ -126,6 +132,5 @@ export function extendPrompt(
 
 export const datasetStats = {
   wordCount: WORDS.length,
-  sentenceCount: SENTENCES.length,
   quoteCount: QUOTES.length,
 };

@@ -5,7 +5,7 @@
 import wordsDataFull from '@data/words.json';
 import quotesDataFull from '@data/quotes.json';
 
-export type PromptMode = 'words' | 'sentences' | 'paragraph' | 'quote' | 'custom';
+export type PromptMode = 'words' | 'paragraph' | 'quote' | 'custom';
 
 interface MonkeyQuote {
     text: string;
@@ -90,20 +90,22 @@ export function generateWords(count: number, options: { punc?: boolean; numbers?
 /**
  * Generate sentences by joining words into natural-looking structures.
  */
-export function generateSentences(count: number): { words: string[]; prompt: string } {
+export function generateSentences(count: number, clean = true): { words: string[]; prompt: string } {
     const words = [];
     for (let i = 0; i < count; i++) {
         // A sentence is 5-12 words
         const sentenceLength = 5 + Math.floor(Math.random() * 8);
         const { words: sWords } = generateWords(sentenceLength, { punc: false });
 
-        // Capitalize first word and add period
-        sWords[0] = sWords[0].charAt(0).toUpperCase() + sWords[0].slice(1);
-        sWords[sWords.length - 1] += '.';
+        if (!clean) {
+            // Capitalize first word and add period only if not cleaning
+            sWords[0] = sWords[0].charAt(0).toUpperCase() + sWords[0].slice(1);
+            sWords[sWords.length - 1] += '.';
+        }
 
         words.push(...sWords);
     }
-    return { words, prompt: words.join(' ') };
+    return { words: words, prompt: words.join(' ') };
 }
 
 /**
@@ -126,9 +128,8 @@ export function generatePrompt(
     switch (mode) {
         case 'words':
             return generateWords(amount, options);
-        case 'sentences':
         case 'paragraph':
-            return generateSentences(amount);
+            return generateSentences(amount, false);
         case 'quote':
             return generateQuote();
         default:

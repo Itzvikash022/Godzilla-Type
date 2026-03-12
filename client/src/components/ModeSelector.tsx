@@ -11,7 +11,6 @@ interface ModeSelectorProps {
 
 const MODES: { value: PromptMode; label: string }[] = [
   { value: 'words', label: 'words' },
-  { value: 'sentences', label: 'sentences' },
   { value: 'paragraph', label: 'paragraph' },
   { value: 'quote', label: 'quote' },
   { value: 'custom', label: 'custom' },
