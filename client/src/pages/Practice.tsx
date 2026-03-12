@@ -51,6 +51,7 @@ function Practice() {
   const [isAIGenerated, setIsAIGenerated] = useState(false);
   const [isMemeSource, setIsMemeSource] = useState(false);
   const [isSavingLocal, setIsSavingLocal] = useState(false);
+  const [resetKey, setResetKey] = useState(0); // Used to force-remount TypingArea on reset
 
   const restartBtnRef = useRef<HTMLButtonElement>(null);
   const resultsRestartBtnRef = useRef<HTMLButtonElement>(null);
@@ -158,6 +159,7 @@ function Practice() {
     setShowResults(false);
     setCustomReady(false);
     setActiveCustomText('');
+    setResetKey(prev => prev + 1);
     resetTest();
   }, [resetTest]);
 
@@ -167,6 +169,7 @@ function Practice() {
     setCustomError('');
     setActiveCustomText('');
     setShowResults(false);
+    setResetKey(prev => prev + 1);
     if (m !== 'custom') resetTest();
   };
 
@@ -346,6 +349,7 @@ function Practice() {
       {showTypingArea && !showResults && (
         <div className="w-full flex flex-col items-center">
           <TypingArea
+            key={resetKey}
             prompt={prompt}
             charStates={charStates}
             currentIndex={currentIndex}

@@ -44,6 +44,7 @@ function Room() {
 
   const [room, setRoom] = useState<RoomType | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [resetKey, setResetKey] = useState(0);
   const [raceData, setRaceData] = useState<RaceStartData | null>(null);
   const [raceResults, setRaceResults] = useState<RaceResultsData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -122,6 +123,7 @@ function Room() {
       setRaceData(data);
       setCountdown(null);
       setRaceResults(null);
+      setResetKey(prev => prev + 1);
       engine.resetTest(data.words, data.prompt);
       engine.startTimer(data.startTime);
     }));
@@ -183,6 +185,7 @@ function Room() {
 
   const handleStartRace = () => emit(SocketEvents.START_RACE, { roomCode: code });
   const handleRestartRace = () => {
+    setResetKey(prev => prev + 1);
     emit(SocketEvents.RESTART_RACE, { roomCode: code });
     setRaceResults(null);
     setRaceData(null);
@@ -477,6 +480,7 @@ function Room() {
               </div>
 
               <TypingArea
+                key={resetKey}
                 prompt={engine.prompt}
                 charStates={engine.charStates}
                 currentIndex={engine.currentIndex}
