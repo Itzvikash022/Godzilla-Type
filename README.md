@@ -18,7 +18,7 @@ A production-ready full-stack web application inspired by Monkeytype, specifical
 - ⚡ **Ultra-Low Latency Engine** — Bypasses React's diffing algorithm for DOM manipulation, matching native desktop app speeds for cursor rendering.
 - 🌐 **LAN Mode Support** — Designed specifically to work offline on a local network with auto-detecting IP broadcasting.
 - ☁️ **Cloud Sync & Storage** — Uses Clerk for auth profiles, Convex for synced leaderboards, and Cloudinary for hosting permanent global user-uploaded meme assets dynamically cached locally.
-- 📊 **Stats Dashboard** — Track Best WPM, average accuracy, and recent race history via IndexedDB and Cloud Sync.
+- 📊 **Professional Stats Dashboard** — High-end performance tracking via **Chart.js**. Features a dual-axis integrated trend (WPM & Accuracy) with smooth bezier curves and interactive tooltips.
 - 🆓 **100% Free** — All large human-curated datasets are stored locally, avoiding expensive APIs.
 
 ## 🛠️ Tech Stack
@@ -28,6 +28,7 @@ A production-ready full-stack web application inspired by Monkeytype, specifical
 | Frontend | React, Vite, TailwindCSS |
 | Backend | Node.js, Express, Socket.IO |
 | Auth & Sync | Clerk (Auth), Convex (Database) |
+| Visualization | Chart.js (via `react-chartjs-2`) |
 | Database | SQLite (server-side via `sql.js`), IndexedDB (client-side) |
 | AI | Google Gemini API (via server-side wrapper) |
 | Architecture | Monorepo structure managed by `pnpm` workspaces |
@@ -89,6 +90,7 @@ pnpm dev
 - **Text Mode Consolidation**: Removed "Sentences" mode to minimize training distractions. "Paragraph" mode remains the standard for punctuated, natural-text training.
 - **Random Start Time**: Added a toggle for non-deterministic visual countdowns (0-12s) to heighten challenge focus.
 - **Strategic AI Rate Limiting**: Implemented a highly custom multi-tiered IP-based rate limiter (3/min and 5/min tiers) built from scratch natively, circumventing off-the-shelf express rate limiters for silent delays instead of hard block screens.
+- **Professional Performance Dashboard (Chart.js)**: Replaced custom SVG charts with full **Chart.js** integration. Achievement-style dual-axis graph overlays WPM Trend and Accuracy with smooth Cubic Bezier interpolation for a world-class Monkeytype aesthetic.
 - **Always-on Stats**: Refactored the UI to show WPM, Accuracy, and Timer immediately upon race start, ticking synchronously via Socket.IO regardless of who typed.
 
 ### 🐛 Critical Bug Fixes
@@ -99,6 +101,7 @@ pnpm dev
 5. **Stats Saving Freeze**: Fixed a SQLite schema mismatch in `race_results` by correctly mapping missing values and correctly resolving the race sequence where idle typers previously gained `100%` accuracy upon timeout.
 6. **Multiplayer Sync Fixes**: Hardened the backend relative paths and unified start timers meaning the race begins exactly on queue without drifting among clients. 
 7. **Convex Data Backfill**: Intercepted missing user profiles cleanly by lazily creating Convex entries if absent inside core mutations.
+8. **Stats Reference Fix**: Resolved a critical `ReferenceError` on the Stats page caused by missing React hook imports during the Chart.js migration.
 
 ---
 
