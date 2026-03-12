@@ -1,53 +1,80 @@
-import { useState, useRef } from 'react';
-import { Upload, X, Volume2, Loader2, AlertTriangle } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Upload, Volume2, Loader2, AlertTriangle, Search, Library, Film, Sticker, Image as ImageIcon } from 'lucide-react';
 import { useMemeLibrary, uploadMeme } from '../services/memeService';
-import type { MemeItem } from '../services/memeService';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import { searchKlipy, getCachedKlipyTrending, KlipyMediaType, KlipyItem, getKlipyPreviewUrl, getKlipyMainUrl } from '../services/klipyService';
 
 interface MemePickerProps {
     onSendMeme: (meme: { memeId: string; imageUrl: string; soundUrl?: string }) => void;
+    onClose?: () => void;
 }
 
-export default function MemePicker({ onSendMeme }: MemePickerProps) {
-    const { memes, isLoading } = useMemeLibrary();
+type Mode = 'library' | 'klipy' | 'upload';
+
+export default function MemePicker({ onSendMeme, onClose }: MemePickerProps) {
+    const { memes, isLoading: isLibraryLoading } = useMemeLibrary();
+    const [mode, setMode] = useState<Mode>('library');
+    const [klipyType, setKlipyType] = useState<KlipyMediaType>('gifs');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [klipyResults, setKlipyResults] = useState<KlipyItem[]>([]);
+    const [isKlipyLoading, setIsKlipyLoading] = useState(false);
+
     const [uploadError, setUploadError] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [previewImage, setPreviewImage] = useState<File | null>(null);
     const [previewSound, setPreviewSound] = useState<File | null>(null);
-    const [showUploadPanel, setShowUploadPanel] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const soundInputRef = useRef<HTMLInputElement>(null);
 
     const saveMeme = useMutation(api.memeMutations.saveMemeMetadata);
 
-    const handleSend = (meme: MemeItem) => {
-        onSendMeme({ memeId: meme.memeId, imageUrl: meme.imageUrl, soundUrl: meme.soundUrl });
+    // Klipy search/trending effect
+    useEffect(() => {
+        if (mode !== 'klipy') return;
+
+        const isTrending = !searchQuery.trim();
+        if (isTrending) {
+            const cached = getCachedKlipyTrending(klipyType);
+            if (cached) {
+                setKlipyResults(cached);
+                setIsKlipyLoading(false);
+                return;
+            }
+        }
+
+        const timer = setTimeout(async () => {
+            setIsKlipyLoading(true);
+            try {
+                const results = await searchKlipy(searchQuery, klipyType);
+                setKlipyResults(results);
+            } finally {
+                setIsKlipyLoading(false);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery, mode, klipyType]);
+
+    const handleSendMeme = (meme: { memeId: string; imageUrl: string; soundUrl?: string }) => {
+        onSendMeme(meme);
+        onClose?.();
     };
 
     const handleUpload = async () => {
-        if (!previewImage) {
-            setUploadError('An image is required.');
-            return;
-        }
+        if (!previewImage) return;
         try {
             setIsUploading(true);
             setUploadError('');
-
-            // Upload to Cloudinary via backend anonymously
             const result = await uploadMeme(previewImage, previewSound);
-
-            // Save metadata to Convex instantly
             await saveMeme({
                 memeId: result.memeId,
                 imageUrl: result.imageUrl,
                 soundUrl: result.soundUrl,
                 type: 'user',
             });
-
             setPreviewImage(null);
             setPreviewSound(null);
-            setShowUploadPanel(false);
+            setMode('library');
         } catch (err: any) {
             setUploadError(err?.message || 'Upload failed.');
         } finally {
@@ -56,119 +83,137 @@ export default function MemePicker({ onSendMeme }: MemePickerProps) {
     };
 
     return (
-        <div className="flex-1 min-h-0 flex flex-col bg-bg-secondary/10">
-            {/* Sticker Grid */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-3" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
-                <p className="text-[9px] uppercase tracking-widest text-main-sub/50 mb-3 flex items-center justify-between">
-                    <span>Library</span>
-                    {isLoading && <Loader2 size={10} className="animate-spin" />}
-                </p>
+        <div className="flex flex-col h-full bg-bg-secondary border border-main-sub/20 rounded-lg overflow-hidden shadow-2xl animate-fade-in text-text-primary">
+            {/* Header Tabs */}
+            <div className="shrink-0 flex bg-bg-primary/40 border-b border-main-sub/10">
+                <button
+                    onClick={() => setMode('library')}
+                    className={`flex-1 py-2 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-colors ${mode === 'library' ? 'text-main bg-main/5 border-b border-main' : 'text-main-sub/50 hover:text-main-sub'}`}
+                >
+                    <Library size={12} /> Library
+                </button>
+                <button
+                    onClick={() => setMode('klipy')}
+                    className={`flex-1 py-2 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-colors ${mode === 'klipy' ? 'text-main bg-main/5 border-b border-main' : 'text-main-sub/50 hover:text-main-sub'}`}
+                >
+                    <Film size={12} /> Klipy
+                </button>
+                <button
+                    onClick={() => setMode('upload')}
+                    className={`flex-1 py-2 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest transition-colors ${mode === 'upload' ? 'text-main bg-main/5 border-b border-main' : 'text-main-sub/50 hover:text-main-sub'}`}
+                >
+                    <Upload size={12} /> Upload
+                </button>
+            </div>
 
-                {memes.length === 0 && !isLoading ? (
-                    <div className="py-8 text-center text-[10px] uppercase text-main-sub/40">
-                        Library is empty
+            {/* Sub-tabs for Klipy Types */}
+            {mode === 'klipy' && (
+                <div className="shrink-0 flex bg-bg-secondary/40 border-b border-main-sub/5 p-1 gap-1">
+                    {(['gifs', 'stickers', 'static-memes', 'clips'] as KlipyMediaType[]).map((type) => (
+                        <button
+                            key={type}
+                            onClick={() => setKlipyType(type)}
+                            className={`flex-1 py-1 text-[8px] uppercase tracking-tighter rounded transition-all ${klipyType === type ? 'bg-main/10 text-main font-bold' : 'text-main-sub/40 hover:text-main-sub/60'}`}
+                        >
+                            {type.replace('static-', '').replace('s', '')}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-2" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
+
+                {mode === 'library' && (
+                    <div className="grid grid-cols-3 gap-1.5">
+                        {isLibraryLoading ? (
+                            <div className="col-span-3 py-10 flex justify-center"><Loader2 size={16} className="animate-spin text-main-sub/50" /></div>
+                        ) : memes.length === 0 ? (
+                            <div className="col-span-3 py-10 text-center text-[10px] uppercase tracking-widest text-main-sub/30">Empty library</div>
+                        ) : (
+                            memes.map((m) => (
+                                <button
+                                    key={m.memeId}
+                                    onClick={() => handleSendMeme(m)}
+                                    className="relative aspect-square rounded bg-bg-primary/50 border border-main-sub/10 hover:border-main/40 hover:bg-main/5 transition-all p-1"
+                                >
+                                    <img src={m.imageUrl} className="w-full h-full object-contain" alt="sticker" />
+                                    {m.soundUrl && <Volume2 size={8} className="absolute bottom-0.5 right-0.5 text-main/60" />}
+                                </button>
+                            ))
+                        )}
                     </div>
-                ) : (
-                    <div className="grid grid-cols-3 gap-2 pb-4">
-                        {memes.map((meme) => (
-                            <button
-                                key={meme.memeId}
-                                onClick={() => handleSend(meme)}
-                                className="relative flex flex-col items-center justify-center rounded-lg border border-main-sub/10 p-2 hover:border-main/30 hover:bg-main/5 transition-all group aspect-square"
-                            >
-                                <img
-                                    src={meme.imageUrl}
-                                    alt="meme"
-                                    loading="lazy"
-                                    className="max-w-full max-h-full object-contain rounded"
-                                />
-                                {meme.soundUrl && (
-                                    <Volume2 size={10} className="absolute bottom-1 right-1 text-main/60 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                )}
+                )}
+
+                {mode === 'klipy' && (
+                    <div className="space-y-2">
+                        <div className="relative mb-2">
+                            <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-main-sub/50" />
+                            <input
+                                autoFocus
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder={`Search Klipy ${klipyType.replace('static-', '')}...`}
+                                className="w-full bg-bg-primary/50 border border-main-sub/10 rounded px-8 py-1.5 text-[11px] outline-none focus:border-main/40 transition-colors"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                            {isKlipyLoading ? (
+                                <div className="col-span-2 py-8 flex justify-center"><Loader2 size={16} className="animate-spin text-main-sub/50" /></div>
+                            ) : klipyResults.length === 0 ? (
+                                <div className="col-span-2 py-8 text-center text-[10px] uppercase tracking-widest text-main-sub/30"> {searchQuery ? 'No Results' : 'Type to search...'} </div>
+                            ) : (
+                                klipyResults.map((t) => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => handleSendMeme({ memeId: `klipy-${t.id}`, imageUrl: getKlipyMainUrl(t) })}
+                                        className="relative aspect-video rounded bg-bg-primary/50 border border-main-sub/10 hover:border-main/40 overflow-hidden group"
+                                    >
+                                        <img src={getKlipyPreviewUrl(t)} className="w-full h-full object-cover" alt={t.title} />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            {klipyType === 'clips' && <Film size={16} className="text-main" />}
+                                            {klipyType === 'stickers' && <Sticker size={16} className="text-main" />}
+                                            {klipyType === 'static-memes' && <ImageIcon size={16} className="text-main" />}
+                                        </div>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {mode === 'upload' && (
+                    <div className="p-2 space-y-4 animate-slide-up">
+                        <div className="bg-orange-500/5 border border-orange-500/10 rounded p-2 flex gap-2 items-start text-orange-400">
+                            <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+                            <p className="text-[9px] leading-relaxed uppercase tracking-tighter">Public and permanent. No personal info.</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setPreviewImage(e.target.files?.[0] ?? null)} />
+                            <input ref={soundInputRef} type="file" accept="audio/*" className="hidden" onChange={(e) => setPreviewSound(e.target.files?.[0] ?? null)} />
+
+                            <button onClick={() => imageInputRef.current?.click()} className="w-full text-left p-2 border border-main-sub/10 rounded hover:bg-main/5 text-[10px] truncate text-main-sub">
+                                {previewImage ? `🖼️ ${previewImage.name}` : '1. Choose Image (required)'}
                             </button>
-                        ))}
+                            <button onClick={() => soundInputRef.current?.click()} className="w-full text-left p-2 border border-main-sub/10 rounded hover:bg-main/5 text-[10px] truncate text-main-sub">
+                                {previewSound ? `🔊 ${previewSound.name}` : '2. Add Sound (optional)'}
+                            </button>
+                        </div>
+
+                        {uploadError && <p className="text-[9px] text-red-400 text-center uppercase tracking-widest">{uploadError}</p>}
+
+                        <button
+                            onClick={handleUpload}
+                            disabled={!previewImage || isUploading}
+                            className="w-full py-2 bg-main text-black font-bold text-[10px] uppercase tracking-widest rounded hover:brightness-110 disabled:opacity-40"
+                        >
+                            {isUploading ? <Loader2 size={12} className="animate-spin mx-auto" /> : 'Start Upload'}
+                        </button>
                     </div>
                 )}
             </div>
-
-            {/* Upload Panel */}
-            {showUploadPanel ? (
-                <div className="shrink-0 border-t border-main-sub/10 p-3 bg-bg-secondary/60 flex flex-col gap-3 animate-fade-in shadow-[0_-4px_24px_rgba(0,0,0,0.2)]">
-                    <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-main flex items-center gap-1.5">
-                            <Upload size={12} />
-                            Upload Meme
-                        </span>
-                        <button onClick={() => setShowUploadPanel(false)} className="text-main-sub/50 hover:text-main">
-                            <X size={14} />
-                        </button>
-                    </div>
-
-                    {/* Security Warning */}
-                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-md p-2 flex gap-2 items-start text-orange-400">
-                        <AlertTriangle size={12} className="shrink-0 mt-0.5" />
-                        <p className="text-[9px] uppercase leading-relaxed tracking-wider">
-                            Uploads are public and permanent. Files cannot be edited or deleted later. Do not upload personal information.
-                        </p>
-                    </div>
-
-                    <input
-                        ref={imageInputRef}
-                        type="file"
-                        accept="image/webp,image/gif,image/png,image/jpeg"
-                        className="hidden"
-                        onChange={(e) => setPreviewImage(e.target.files?.[0] ?? null)}
-                    />
-                    <input
-                        ref={soundInputRef}
-                        type="file"
-                        accept="audio/mpeg,audio/ogg"
-                        className="hidden"
-                        onChange={(e) => setPreviewSound(e.target.files?.[0] ?? null)}
-                    />
-
-                    <div className="flex flex-col gap-1.5">
-                        <button
-                            onClick={() => imageInputRef.current?.click()}
-                            className="text-[10px] py-1.5 px-3 border border-main-sub/20 rounded hover:border-main/40 text-main-sub hover:text-main transition-colors text-left truncate"
-                        >
-                            {previewImage ? `🖼️ ${previewImage.name}` : '1. Choose Image (req, max 2MB)'}
-                        </button>
-                        <button
-                            onClick={() => soundInputRef.current?.click()}
-                            className="text-[10px] py-1.5 px-3 border border-main-sub/20 rounded hover:border-main/40 text-main-sub hover:text-main transition-colors text-left truncate"
-                        >
-                            {previewSound ? `🔊 ${previewSound.name}` : '2. Add Sound (opt, max 500KB)'}
-                        </button>
-                    </div>
-
-                    {uploadError && (
-                        <p className="text-[9px] text-red-400 uppercase tracking-widest bg-red-400/10 p-1.5 rounded text-center">{uploadError}</p>
-                    )}
-
-                    <button
-                        onClick={handleUpload}
-                        disabled={!previewImage || isUploading}
-                        className="py-2.5 mt-1 bg-main text-black font-bold text-[10px] uppercase tracking-widest rounded hover:bg-main/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {isUploading ? (
-                            <><Loader2 size={12} className="animate-spin" /> Uploading to Cloudinary...</>
-                        ) : (
-                            'Upload & Add to Library'
-                        )}
-                    </button>
-                </div>
-            ) : (
-                <div className="shrink-0 border-t border-main-sub/10 p-2 bg-bg-secondary/40">
-                    <button
-                        onClick={() => setShowUploadPanel(true)}
-                        className="w-full flex items-center justify-center gap-2 py-2 text-[10px] uppercase tracking-widest text-main-sub border border-transparent hover:border-main-sub/20 hover:bg-white/5 rounded transition-colors"
-                    >
-                        <Upload size={12} />
-                        Upload Custom Meme
-                    </button>
-                </div>
-            )}
         </div>
     );
 }

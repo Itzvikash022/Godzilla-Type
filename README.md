@@ -10,7 +10,7 @@ A production-ready full-stack web application inspired by Monkeytype, specifical
 - 🏁 **Multiplayer Racing** — Real-time races with live progress bars and active WPM decay.
 - 👥 **Team Mode** — Assign players to Red/Blue teams for collective net WPM scoring.
 - 🔒 **Private Rooms** — Unique 6-character room codes for private, isolated races.
-- 💬 **Lobby Chat & Meme Room** — Real-time chat integration alongside a fully synced **Meme Picker** supporting anonymous animated sticker and sound uploads linked instantly across clients.
+- 💬 **Integrated Chat & Klipy** — Unified communication feed with a compact **Meme Picker** supporting anonymous uploads and millions of **Klipy** GIFs, Stickers, Memes, and Clips.
 - 🧠 **AI Content Generator** — Generate custom typing prompts using Google Gemini AI, bank them up for later with "Save locally", and experiment with explicit difficulty tiers including "Yehh boiii" Meme Mode.
 - ♾️ **Infinite Typing** — Auto-extending text buffers mean you never run out of text during a timed race.
 - 🏁 **Lobby Ready & Kick** — Hosts can moderate rooms by kicking players, and races only start once everyone toggles their **Ready** status.
@@ -56,10 +56,14 @@ pnpm --filter shared build
 ### 4. Environment Setup
 Create `.env` files in both `client/` and `server/` directories based on the provided `.env.example` files.
 
-**Required for Client:**
-You must set up Clerk and Convex for the application to run.
-1. `VITE_CLERK_PUBLISHABLE_KEY`: Get this from your [Clerk Dashboard](https://dashboard.clerk.com).
-2. `VITE_CONVEX_URL`: Get this from your [Convex Dashboard](https://dashboard.convex.dev).
+**Required for Client (`client/.env`):**
+1. `VITE_CLERK_PUBLISHABLE_KEY`: Get this from your [Clerk Dashboard](https://dashboard.clerk.com) for authentication.
+2. `VITE_CONVEX_URL` & `VITE_CONVEX_SITE_URL`: Get these from your [Convex Dashboard](https://dashboard.convex.dev) for real-time leaderboards.
+3. `VITE_KLIPY_APP_KEY`: Get this from the [Klipy Partner Dashboard](https://partner.klipy.com) to enable the Meme/GIF search picker.
+
+**Required for Server (`server/.env`):**
+1. `GEMINI_API_KEY`: Get this from [Google AI Studio](https://aistudio.google.com) to unlock AI-generated typing prompts.
+2. `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`: Get these from [Cloudinary](https://cloudinary.com) to host uploaded meme assets.
 
 ### 5. Run the Application
 Start both the Frontend and Backend concurrently using the root shortcut:
@@ -84,6 +88,7 @@ pnpm dev
 - **Custom Content Persistency**: The custom text mode now remembers and persists your last generated/typed input perfectly across complete browser reloads.
 - **Yehh boiii Difficulty**: Added a fun meme mode difficulty tier with completely unhinged formatting mechanics natively via AI.
 - **Multiplayer Chat Lobby**: Integrated a real-time reactive chatbox for players to communicate inside rooms, built heavily with Flexbox styling constraints.
+- **Unified Communication & Klipy Integration**: Merged the Meme Room and Chat into a single synchronous feed. Replaced Tenor with the versatile Klipy API, enabling instant, in-chat search for millions of GIFs, Stickers, Memes, and Video Clips via a sleek compact picker.
 - **Multiplayer Randomizer**: Added ability for hosts to instantly start races with randomized time and text modes.
 - **Lobby Ready & Kick System**: Implemented mandatory "Ready" status for all players. Hosts can moderate rooms with a "Kick" button, immediately evicting disruptive players from the session.
 - **Persistent Practice Settings**: The solo practice mode now remembers your last selected duration and text mode perfectly across refreshes, so you never have to re-configure your training setup.
