@@ -30,6 +30,7 @@ export interface Player {
   errors: number;
   team: TeamColor;
   isHost: boolean;
+  isReady: boolean;
   isFinished: boolean;
   finishOrder: number;
 }
@@ -115,6 +116,16 @@ export interface UpdateSettingsPayload {
   settings: Partial<RoomSettings>;
 }
 
+export interface PlayerReadyPayload {
+  roomCode: string;
+  isReady: boolean;
+}
+
+export interface KickPlayerPayload {
+  roomCode: string;
+  playerId: string;
+}
+
 export interface RoomUpdateData {
   room: Room;
 }
@@ -171,6 +182,8 @@ export const SocketEvents = {
   ASSIGN_TEAM: 'assign-team',
   RESTART_RACE: 'restart-race',
   UPDATE_SETTINGS: 'update-settings',
+  PLAYER_READY: 'player-ready',
+  KICK_PLAYER: 'kick-player',
 
   // Server → Client
   ROOM_CREATED: 'room-created',

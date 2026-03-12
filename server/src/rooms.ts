@@ -34,6 +34,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     errors: 0,
     team: TeamColor.NONE,
     isHost: true,
+    isReady: false,
     isFinished: false,
     finishOrder: 0,
   };
@@ -78,6 +79,7 @@ export function joinRoom(code: string, playerId: string, playerName: string): Ro
     errors: 0,
     team: TeamColor.NONE,
     isHost: false,
+    isReady: false,
     isFinished: false,
     finishOrder: 0,
   };
@@ -127,6 +129,38 @@ export function updateSettings(code: string, settings: Partial<RoomSettings>): R
   if (!room) return null;
 
   room.settings = { ...room.settings, ...settings };
+  return room;
+}
+
+export function setPlayerReady(code: string, playerId: string, isReady: boolean): Room | null {
+  const room = rooms.get(code);
+  if (!room) return null;
+
+  const player = room.players.find((p) => p.id === playerId);
+  if (player) {
+    player.isReady = isReady;
+  }
+
+  return room;
+}
+
+export function kickPlayer(code: string, playerId: string): Room | null {
+  const room = rooms.get(code);
+  if (!room) return null;
+
+  room.players = room.players.filter((p) => p.id !== playerId);
+
+  if (room.players.length === 0) {
+    rooms.delete(code);
+    return null;
+  }
+
+  // Transfer host if necessary
+  if (room.hostId === playerId) {
+    room.hostId = room.players[0].id;
+    room.players[0].isHost = true;
+  }
+
   return room;
 }
 
@@ -243,6 +277,7 @@ export function restartRace(code: string): Room | null {
     player.progress = 0;
     player.charsTyped = 0;
     player.errors = 0;
+    player.isReady = false;
     player.isFinished = false;
     player.finishOrder = 0;
   }

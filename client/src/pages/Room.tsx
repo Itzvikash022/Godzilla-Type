@@ -147,6 +147,12 @@ function Room() {
       setMemeMessages(history); // isHistory flag already set server-side
     }));
 
+    cleanups.push(on(SocketEvents.ERROR, (data: { message: string }) => {
+      if (data.message === 'You have been kicked from the room.') {
+        navigate('/multiplayer');
+      }
+    }));
+
     if (code && playerName) {
       emit(SocketEvents.JOIN_ROOM, { roomCode: code, playerName });
     }
@@ -205,6 +211,13 @@ function Room() {
       roomCode: code,
       settings: { randomStartTime: enabled },
     });
+  };
+  const handleToggleReady = () => {
+    const isReady = !players.find(p => p.id === currentPlayerId)?.isReady;
+    emit(SocketEvents.PLAYER_READY, { roomCode: code, isReady });
+  };
+  const handleKickPlayer = (playerId: string) => {
+    emit(SocketEvents.KICK_PLAYER, { roomCode: code, playerId });
   };
   const handleStartRandom = () => {
     const durations = [15, 30, 60, 120];
@@ -348,35 +361,74 @@ function Room() {
                 <div className="flex flex-col gap-3 pt-4">
                   <button
                     onClick={handleStartRace}
-                    className="w-full py-4 bg-bg-secondary text-main border border-main/20 rounded hover:bg-main/5 transition-all uppercase tracking-[0.2em] text-sm font-bold"
+                    disabled={!players.every(p => p.isReady)}
+                    className="w-full py-4 bg-bg-secondary text-main border border-main/20 rounded hover:bg-main/5 transition-all uppercase tracking-[0.2em] text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Start Race
                   </button>
                   <button
                     onClick={handleStartRandom}
-                    className="w-full py-3 bg-main/5 text-main-sub border border-main-sub/20 rounded hover:bg-main/10 hover:text-main transition-all uppercase tracking-[0.2em] text-xs font-bold"
+                    disabled={!players.every(p => p.isReady)}
+                    className="w-full py-3 bg-main/5 text-main-sub border border-main-sub/20 rounded hover:bg-main/10 hover:text-main transition-all uppercase tracking-[0.2em] text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Start Random
                   </button>
+                  {!players.every(p => p.isReady) && (
+                    <p className="text-[10px] text-center text-error uppercase tracking-widest animate-pulse">
+                      Waiting for everyone to be ready...
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!isHost && !players.every(p => p.isReady) && (
+                <div className="pt-4">
+                  <p className="text-[10px] text-center text-main-sub uppercase tracking-widest animate-pulse">
+                    Waiting for host to start...
+                  </p>
                 </div>
               )}
             </div>
 
             {/* Players Section under Settings */}
             <div className="space-y-4 pt-4 border-t border-main-sub/10 mt-8">
-              <h2 className="text-sm uppercase tracking-[0.3em] text-main-sub pb-2 border-b border-main-sub/10">Players ({players.length})</h2>
+              <div className="flex items-center justify-between border-b border-main-sub/10 pb-2">
+                <h2 className="text-sm uppercase tracking-[0.3em] text-main-sub">Players ({players.length})</h2>
+                <button
+                  onClick={handleToggleReady}
+                  className={`px-4 py-1.5 rounded transition-all uppercase tracking-widest text-[10px] font-bold border ${players.find(p => p.id === currentPlayerId)?.isReady
+                      ? 'bg-main/10 text-main border-main/40'
+                      : 'bg-bg-primary text-text-secondary border-main-sub/20 hover:border-main/20'
+                    }`}
+                >
+                  {players.find(p => p.id === currentPlayerId)?.isReady ? 'Ready' : 'Not Ready'}
+                </button>
+              </div>
               <div className="grid gap-2">
                 {players.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-main-sub/5">
-                    <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: hashColor(p.name, p.id) }}>
-                      {p.name} {p.isHost && <Crown size={12} className="text-main-sub" />}
-                    </span>
-                    {room.settings.teamMode && (isHost || p.id === currentPlayerId) && (
-                      <div className="flex gap-2">
-                        <button onClick={() => handleAssignTeam(p.id, TeamColor.RED)} className={`text-[10px] uppercase px-2 py-0.5 rounded ${p.team === TeamColor.RED ? 'bg-red-500/20 text-red-500' : 'text-main-sub'}`}>Red</button>
-                        <button onClick={() => handleAssignTeam(p.id, TeamColor.BLUE)} className={`text-[10px] uppercase px-2 py-0.5 rounded ${p.team === TeamColor.BLUE ? 'bg-blue-500/20 text-blue-500' : 'text-main-sub'}`}>Blue</button>
-                      </div>
-                    )}
+                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-main-sub/5" >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${p.isReady ? 'bg-main shadow-[0_0_8px_rgba(var(--main-rgb),0.5)]' : 'bg-main-sub/30'}`} title={p.isReady ? 'Ready' : 'Not Ready'}></span>
+                      <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: hashColor(p.name, p.id) }}>
+                        {p.name} {p.isHost && <Crown size={12} className="text-main-sub" />}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {room.settings.teamMode && (isHost || p.id === currentPlayerId) && (
+                        <div className="flex gap-1">
+                          <button onClick={() => handleAssignTeam(p.id, TeamColor.RED)} className={`text-[8px] uppercase px-1.5 py-0.5 rounded border transition-colors ${p.team === TeamColor.RED ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'border-transparent text-main-sub hover:text-red-400'}`}>Red</button>
+                          <button onClick={() => handleAssignTeam(p.id, TeamColor.BLUE)} className={`text-[8px] uppercase px-1.5 py-0.5 rounded border transition-colors ${p.team === TeamColor.BLUE ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' : 'border-transparent text-main-sub hover:text-blue-400'}`}>Blue</button>
+                        </div>
+                      )}
+                      {isHost && p.id !== currentPlayerId && (
+                        <button
+                          onClick={() => handleKickPlayer(p.id)}
+                          className="px-3 py-1 bg-error/5 text-error/60 border border-error/20 rounded hover:bg-error/10 hover:text-error transition-all text-[10px] uppercase tracking-wider font-medium"
+                        >
+                          Kick
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -394,62 +446,67 @@ function Room() {
             />
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* RACING STATE */}
-      {isRacing && (
-        <div className="flex flex-col lg:flex-row gap-8 items-start animate-fade-in">
-          {/* Left: Progress Side */}
-          <div className="w-full lg:w-64 space-y-4 pt-12">
-            <h3 className="text-[10px] uppercase tracking-widest text-main-sub opacity-50 mb-4">Live Progress</h3>
-            {players.map(p => <ProgressBar key={p.id} player={p} isCurrentUser={p.id === currentPlayerId} />)}
-          </div>
-
-          {/* Center: Typing Area */}
-          <div className="flex-1 flex flex-col items-center">
-            <div className="mb-4 flex gap-10 font-mono text-xl animate-fade-in opacity-50">
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">wpm</span>
-                <span className="text-main">{engine.netWpm}</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">acc</span>
-                <span className="text-main">{engine.accuracy}%</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">time</span>
-                <span className="text-main">{engine.timeLeft}s</span>
-              </div>
+      {
+        isRacing && (
+          <div className="flex flex-col lg:flex-row gap-8 items-start animate-fade-in">
+            {/* Left: Progress Side */}
+            <div className="w-full lg:w-64 space-y-4 pt-12">
+              <h3 className="text-[10px] uppercase tracking-widest text-main-sub opacity-50 mb-4">Live Progress</h3>
+              {players.map(p => <ProgressBar key={p.id} player={p} isCurrentUser={p.id === currentPlayerId} />)}
             </div>
 
-            <TypingArea
-              prompt={engine.prompt}
-              charStates={engine.charStates}
-              currentIndex={engine.currentIndex}
-              onKeyDown={engine.handleKeyPress}
-              disabled={engine.isFinished}
-            />
+            {/* Center: Typing Area */}
+            <div className="flex-1 flex flex-col items-center">
+              <div className="mb-4 flex gap-10 font-mono text-xl animate-fade-in opacity-50">
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">wpm</span>
+                  <span className="text-main">{engine.netWpm}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">acc</span>
+                  <span className="text-main">{engine.accuracy}%</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] uppercase tracking-tighter text-main-sub mb-1">time</span>
+                  <span className="text-main">{engine.timeLeft}s</span>
+                </div>
+              </div>
+
+              <TypingArea
+                prompt={engine.prompt}
+                charStates={engine.charStates}
+                currentIndex={engine.currentIndex}
+                onKeyDown={engine.handleKeyPress}
+                disabled={engine.isFinished}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* FINISHED STATE */}
-      {isFinished && raceResults && (
-        <div className="max-w-3xl mx-auto w-full animate-slide-up">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold tracking-tighter text-text-primary">Race Result</h2>
+      {
+        isFinished && raceResults && (
+          <div className="max-w-3xl mx-auto w-full animate-slide-up">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold tracking-tighter text-text-primary">Race Result</h2>
+            </div>
+
+            <Leaderboard players={raceResults.players} teamScores={raceResults.teamScores} />
+
+            {isHost && (
+              <button onClick={handleRestartRace} className="mt-12 w-full py-4 text-main-sub hover:text-main text-xs uppercase tracking-[0.3em] transition-colors">
+                Restart Race
+              </button>
+            )}
           </div>
-
-          <Leaderboard players={raceResults.players} teamScores={raceResults.teamScores} />
-
-          {isHost && (
-            <button onClick={handleRestartRace} className="mt-12 w-full py-4 text-main-sub hover:text-main text-xs uppercase tracking-[0.3em] transition-colors">
-              Restart Race
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
 

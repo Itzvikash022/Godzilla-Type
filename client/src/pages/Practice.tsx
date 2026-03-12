@@ -17,6 +17,8 @@ import { type PromptMode } from '../typing/promptGenerator';
 const MAX_CUSTOM_CHARS = 5000;
 const STORAGE_CUSTOM_TEXT = 'godzilla-custom-text';
 const STORAGE_CUSTOM_HISTORY = 'godzilla-custom-history';
+const STORAGE_PRACTICE_DURATION = 'godzilla-practice-duration';
+const STORAGE_PRACTICE_MODE = 'godzilla-practice-mode';
 
 function sanitizeCustomText(text: string): string {
   return text
@@ -27,8 +29,14 @@ function sanitizeCustomText(text: string): string {
 }
 
 function Practice() {
-  const [duration, setDuration] = useState(30);
-  const [mode, setMode] = useState<PromptMode>('words');
+  const [duration, setDuration] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_PRACTICE_DURATION);
+    return saved ? parseInt(saved, 10) : 30;
+  });
+  const [mode, setMode] = useState<PromptMode>(() => {
+    const saved = localStorage.getItem(STORAGE_PRACTICE_MODE) as PromptMode;
+    return saved || 'words';
+  });
   const [showResults, setShowResults] = useState(false);
 
   // Custom mode state
@@ -81,6 +89,15 @@ function Practice() {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
+
+  // Persist settings
+  useEffect(() => {
+    localStorage.setItem(STORAGE_PRACTICE_DURATION, duration.toString());
+  }, [duration]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_PRACTICE_MODE, mode);
+  }, [mode]);
 
   const handleCustomInputChange = (text: string, fromAI = false, isMeme = false) => {
     const val = text.slice(0, MAX_CUSTOM_CHARS);

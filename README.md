@@ -13,6 +13,7 @@ A production-ready full-stack web application inspired by Monkeytype, specifical
 - 💬 **Lobby Chat & Meme Room** — Real-time chat integration alongside a fully synced **Meme Picker** supporting anonymous animated sticker and sound uploads linked instantly across clients.
 - 🧠 **AI Content Generator** — Generate custom typing prompts using Google Gemini AI, bank them up for later with "Save locally", and experiment with explicit difficulty tiers including "Yehh boiii" Meme Mode.
 - ♾️ **Infinite Typing** — Auto-extending text buffers mean you never run out of text during a timed race.
+- 🏁 **Lobby Ready & Kick** — Hosts can moderate rooms by kicking players, and races only start once everyone toggles their **Ready** status.
 - 🎲 **Multiplayer Randomizer** — Hosts can trigger races with randomized durations and text modes in a single click.
 - ⚡ **Ultra-Low Latency Engine** — Bypasses React's diffing algorithm for DOM manipulation, matching native desktop app speeds for cursor rendering.
 - 🌐 **LAN Mode Support** — Designed specifically to work offline on a local network with auto-detecting IP broadcasting.
@@ -83,6 +84,8 @@ pnpm dev
 - **Yehh boiii Difficulty**: Added a fun meme mode difficulty tier with completely unhinged formatting mechanics natively via AI.
 - **Multiplayer Chat Lobby**: Integrated a real-time reactive chatbox for players to communicate inside rooms, built heavily with Flexbox styling constraints.
 - **Multiplayer Randomizer**: Added ability for hosts to instantly start races with randomized time and text modes.
+- **Lobby Ready & Kick System**: Implemented mandatory "Ready" status for all players. Hosts can moderate rooms with a "Kick" button, immediately evicting disruptive players from the session.
+- **Persistent Practice Settings**: The solo practice mode now remembers your last selected duration and text mode perfectly across refreshes, so you never have to re-configure your training setup.
 - **Random Start Time**: Added a toggle for non-deterministic visual countdowns (0-12s) to heighten challenge focus.
 - **Strategic AI Rate Limiting**: Implemented a highly custom multi-tiered IP-based rate limiter (3/min and 5/min tiers) built from scratch natively, circumventing off-the-shelf express rate limiters for silent delays instead of hard block screens.
 - **Always-on Stats**: Refactored the UI to show WPM, Accuracy, and Timer immediately upon race start, ticking synchronously via Socket.IO regardless of who typed.

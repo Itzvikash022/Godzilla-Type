@@ -12,6 +12,8 @@ import {
   UpdateSettingsPayload,
   ChatMessagePayload,
   MemeMessagePayload,
+  PlayerReadyPayload,
+  KickPlayerPayload,
   COUNTDOWN_SECONDS,
 } from '@godzilla-type/shared';
 import {
@@ -21,6 +23,8 @@ import {
   getRoomByCode,
   assignTeam,
   updateSettings,
+  setPlayerReady,
+  kickPlayer,
   prepareRace,
   startRace,
   updatePlayerProgress,
@@ -109,6 +113,36 @@ export function registerSocketHandlers(io: Server) {
       const room = assignTeam(payload.roomCode, payload.playerId, payload.team);
       if (room) {
         io.to(payload.roomCode).emit(SocketEvents.ROOM_UPDATED, { room });
+      }
+    });
+
+    // ---- PLAYER READY ----
+    socket.on(SocketEvents.PLAYER_READY, (payload: PlayerReadyPayload) => {
+      const room = setPlayerReady(payload.roomCode, socket.id, payload.isReady);
+      if (room) {
+        io.to(payload.roomCode).emit(SocketEvents.ROOM_UPDATED, { room });
+      }
+    });
+
+    // ---- KICK PLAYER ----
+    socket.on(SocketEvents.KICK_PLAYER, (payload: KickPlayerPayload) => {
+      const room = getRoomByCode(payload.roomCode);
+      if (!room || room.hostId !== socket.id) return;
+      if (payload.playerId === socket.id) return; // Cannot kick self
+
+      const updated = kickPlayer(payload.roomCode, payload.playerId);
+
+      // Notify the kicked player specifically if we want to force them out immediately
+      // But they will also see them missing from the room update.
+      // Let's force them to leave room and join the default room of their socket.
+      const targetSocket = io.sockets.sockets.get(payload.playerId);
+      if (targetSocket) {
+        targetSocket.leave(payload.roomCode);
+        targetSocket.emit(SocketEvents.ERROR, { message: 'You have been kicked from the room.' });
+      }
+
+      if (updated) {
+        io.to(payload.roomCode).emit(SocketEvents.ROOM_UPDATED, { room: updated });
       }
     });
 
