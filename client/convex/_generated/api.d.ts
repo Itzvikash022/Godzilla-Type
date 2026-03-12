@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as feedback from "../feedback.js";
 import type * as memeMutations from "../memeMutations.js";
 import type * as mutations from "../mutations.js";
 import type * as queries from "../queries.js";
@@ -19,6 +20,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  feedback: typeof feedback;
   memeMutations: typeof memeMutations;
   mutations: typeof mutations;
   queries: typeof queries;

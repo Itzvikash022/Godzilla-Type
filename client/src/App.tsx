@@ -6,6 +6,7 @@ import Room from './pages/Room';
 import Stats from './pages/Stats';
 import LeaderboardPage from './pages/LeaderboardPage';
 import Navbar from './components/Navbar';
+import FeedbackWidget from './components/FeedbackWidget';
 
 function AppRoutes() {
   const location = useLocation();
@@ -29,6 +30,7 @@ function App() {
         <main className="flex-1">
           <AppRoutes />
         </main>
+        <FeedbackWidget />
       </div>
     </BrowserRouter>
   );

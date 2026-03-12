@@ -50,4 +50,12 @@ export default defineSchema({
         type: v.string(),                     // 'builtin' | 'user'
     })
         .index('by_uploader', ['uploadedBy']),
+
+    feedback: defineTable({
+        name: v.string(),
+        module: v.string(),   // e.g. 'Practice - Words', 'Multiplayer Race', etc.
+        category: v.string(), // e.g. 'Bug', 'Suggestion', 'Feature Request'
+        description: v.string(),
+        createdAt: v.number(),
+    }),
 });

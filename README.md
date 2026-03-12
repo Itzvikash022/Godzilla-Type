@@ -19,6 +19,7 @@ A production-ready full-stack web application inspired by Monkeytype, specifical
 - 🌐 **LAN Mode Support** — Designed specifically to work offline on a local network with auto-detecting IP broadcasting.
 - ☁️ **Cloud Sync & Storage** — Uses Clerk for auth profiles, Convex for synced leaderboards, and Cloudinary for hosting permanent global user-uploaded meme assets dynamically cached locally.
 - 📊 **Professional Stats Dashboard** — High-end performance tracking via **Chart.js**. Features a dual-axis integrated trend (WPM & Accuracy) with smooth bezier curves and interactive tooltips.
+- 💬 **Feedback Widget** — A floating in-app feedback button (bottom-left corner) lets users submit bug reports, suggestions, and feature requests directly — saved to Convex and delivered instantly to a configurable Telegram bot.
 - 🆓 **100% Free** — All large human-curated datasets are stored locally, avoiding expensive APIs.
 
 ## 🛠️ Tech Stack
@@ -61,6 +62,23 @@ Create `.env` files in both `client/` and `server/` directories based on the pro
 2. `VITE_CONVEX_URL` & `VITE_CONVEX_SITE_URL`: Get these from your [Convex Dashboard](https://dashboard.convex.dev) for real-time leaderboards.
 3. `VITE_KLIPY_APP_KEY`: Get this from the [Klipy Partner Dashboard](https://partner.klipy.com) to enable the Meme/GIF search picker.
 
+**Convex Environment Variables (set via CLI — NOT in any `.env` file):**
+
+Convex functions run on Convex's cloud, separate from your local server or Vercel. Their env vars must be set using the Convex CLI:
+```bash
+cd client
+# Local dev
+npx convex env set TELEGRAM_BOT_TOKEN your_bot_token
+npx convex env set TELEGRAM_CHAT_ID your_chat_id
+# Production
+npx convex env set TELEGRAM_BOT_TOKEN your_bot_token --prod
+npx convex env set TELEGRAM_CHAT_ID your_chat_id --prod
+```
+- `TELEGRAM_BOT_TOKEN`: Create a bot via [@BotFather](https://t.me/BotFather) on Telegram.
+- `TELEGRAM_CHAT_ID`: Get your Chat ID from [@userinfobot](https://t.me/userinfobot).
+
+Alternatively, you can set these directly in the [Convex Dashboard](https://dashboard.convex.dev) under **Settings → Environment Variables**.
+
 **Required for Server (`server/.env`):**
 1. `GEMINI_API_KEY`: Get this from [Google AI Studio](https://aistudio.google.com) to unlock AI-generated typing prompts.
 2. `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`: Get these from [Cloudinary](https://cloudinary.com) to host uploaded meme assets.
@@ -89,6 +107,7 @@ pnpm dev
 - **Yehh boiii Difficulty**: Added a fun meme mode difficulty tier with completely unhinged formatting mechanics natively via AI.
 - **Multiplayer Chat Lobby**: Integrated a real-time reactive chatbox for players to communicate inside rooms, built heavily with Flexbox styling constraints.
 - **Unified Communication & Klipy Integration**: Merged the Meme Room and Chat into a single synchronous feed. Replaced Tenor with the versatile Klipy API, enabling instant, in-chat search for millions of GIFs, Stickers, Memes, and Video Clips via a sleek compact picker.
+- **Feedback Widget**: Added a global floating feedback button in the bottom-left corner, available on every page. Opens a modal form with Name, Module (dropdown), Category (Bug / Suggestion / Feature Request etc.), and Description fields. On submit, feedback is saved to the Convex `feedback` table and a formatted notification is pushed to a Telegram bot. Telegram credentials are stored securely as Convex environment variables (not in any `.env` file) using `npx convex env set`.
 - **Multiplayer Randomizer**: Added ability for hosts to instantly start races with randomized time and text modes.
 - **Lobby Ready & Kick System**: Implemented mandatory "Ready" status for all players. Hosts can moderate rooms with a "Kick" button, immediately evicting disruptive players from the session.
 - **Persistent Practice Settings**: The solo practice mode now remembers your last selected duration and text mode perfectly across refreshes, so you never have to re-configure your training setup.
