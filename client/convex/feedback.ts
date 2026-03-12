@@ -50,30 +50,42 @@ export const submit = action({
                 : args.category === 'Timepass' ? '🎮'
                 : '📝';
 
+            // Escape HTML special chars in user-supplied text to prevent parse errors
+            const esc = (s: string) => s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
             const text = [
-                `${emoji} *New Godzilla-Type Feedback*`,
+                `${emoji} <b>New Godzilla-Type Feedback</b>`,
                 ``,
-                `👤 *Name:* ${args.name}`,
-                `📦 *Module:* ${args.module}`,
-                `🏷️ *Category:* ${args.category}`,
+                `👤 <b>Name:</b> ${esc(args.name)}`,
+                `📦 <b>Module:</b> ${esc(args.module)}`,
+                `🏷️ <b>Category:</b> ${esc(args.category)}`,
                 ``,
-                `💬 *Description:*`,
-                args.description,
+                `💬 <b>Description:</b>`,
+                esc(args.description),
             ].join('\n');
 
             try {
-                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         chat_id: chatId,
                         text,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                     }),
                 });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error(`Telegram API error ${response.status}:`, errorBody);
+                } else {
+                    console.log('Telegram notification sent successfully.');
+                }
             } catch (err) {
-                console.error('Telegram notification failed:', err);
-                // Don't throw—feedback was already saved to DB
+                console.error('Telegram fetch failed (network error):', err);
             }
         } else {
             console.warn('Telegram credentials not configured. Feedback saved to DB only.');

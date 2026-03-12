@@ -74,8 +74,26 @@ npx convex env set TELEGRAM_CHAT_ID your_chat_id
 npx convex env set TELEGRAM_BOT_TOKEN your_bot_token --prod
 npx convex env set TELEGRAM_CHAT_ID your_chat_id --prod
 ```
-- `TELEGRAM_BOT_TOKEN`: Create a bot via [@BotFather](https://t.me/BotFather) on Telegram.
-- `TELEGRAM_CHAT_ID`: Get your Chat ID from [@userinfobot](https://t.me/userinfobot).
+- `TELEGRAM_BOT_TOKEN`: Create a bot via [@BotFather](https://t.me/BotFather). Copy the **full** token — it must include the numeric bot ID and a colon, e.g. `7123456789:AAEKMIkl...`
+- `TELEGRAM_CHAT_ID`: See below for how to get this correctly.
+
+**Getting your Chat ID (do NOT rely on @userinfobot alone):**
+1. Send any message to your bot (e.g. `@Godzilla_type_feedback_bot`) from your Telegram account.
+2. Open this URL in your browser (replace token):
+   ```
+   https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
+   ```
+3. Find `"chat":{"id": XXXXXXXXX}` in the response — that number is your Chat ID.
+
+**Telegram Troubleshooting:**
+
+| Error | Cause | Fix |
+|---|---|---|
+| `404 Not Found` | Bot token is missing the numeric prefix (e.g. `1234567:`) | Get full token from BotFather via `/mybots` → API Token |
+| `403 Forbidden: bots can't send messages to bots` | Chat ID is the ID of another bot, not your user | Use `getUpdates` API (see above) to get your real Chat ID |
+| `400 Bad Request: chat not found` | Bot has never received a message from that Chat ID | Send a `/start` message to your bot first, then retry |
+
+Check Convex function logs at **Convex Dashboard → Logs → feedback:submit** for the exact Telegram error response.
 
 Alternatively, you can set these directly in the [Convex Dashboard](https://dashboard.convex.dev) under **Settings → Environment Variables**.
 
