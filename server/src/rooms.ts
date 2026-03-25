@@ -16,6 +16,7 @@ import {
 } from '@godzilla-type/shared';
 
 const rooms = new Map<string, Room>();
+const playerRoomIndex = new Map<string, string>(); // playerId -> roomCode (O(1) lookup)
 
 export function createRoom(hostId: string, hostName: string): Room {
   let code = generateRoomCode();
@@ -55,9 +56,11 @@ export function createRoom(hostId: string, hostName: string): Room {
     words: [],
     startTime: null,
     endTime: null,
+    finishCounter: 0,
   };
 
   rooms.set(code, room);
+  playerRoomIndex.set(hostId, code);
   return room;
 }
 
@@ -85,6 +88,7 @@ export function joinRoom(code: string, playerId: string, playerName: string): Ro
   };
 
   room.players.push(player);
+  playerRoomIndex.set(playerId, code);
   return room;
 }
 
@@ -93,6 +97,7 @@ export function leaveRoom(code: string, playerId: string): Room | null {
   if (!room) return null;
 
   room.players = room.players.filter((p) => p.id !== playerId);
+  playerRoomIndex.delete(playerId);
 
   if (room.players.length === 0) {
     rooms.delete(code);
@@ -149,6 +154,7 @@ export function kickPlayer(code: string, playerId: string): Room | null {
   if (!room) return null;
 
   room.players = room.players.filter((p) => p.id !== playerId);
+  playerRoomIndex.delete(playerId);
 
   if (room.players.length === 0) {
     rooms.delete(code);
@@ -172,6 +178,8 @@ export function prepareRace(code: string): Room | null {
   room.words = words;
   room.prompt = prompt;
   room.state = RaceState.COUNTDOWN;
+
+  room.finishCounter = 0;
 
   // Reset all players
   for (const player of room.players) {
@@ -227,8 +235,8 @@ export function updatePlayerProgress(
 
   if (data.isFinished && !player.isFinished) {
     player.isFinished = true;
-    const finishedCount = room.players.filter((p) => p.isFinished).length;
-    player.finishOrder = finishedCount;
+    room.finishCounter = (room.finishCounter ?? 0) + 1;
+    player.finishOrder = room.finishCounter;
   }
 
   return room;
@@ -244,6 +252,9 @@ export function finishRace(code: string): Room | null {
   const room = rooms.get(code);
   if (!room) return null;
 
+  // ── IDEMPOTENCY GUARD: only allow transition from RACING → FINISHED ──
+  if (room.state !== RaceState.RACING) return null;
+
   room.state = RaceState.FINISHED;
   room.endTime = Date.now();
 
@@ -254,6 +265,8 @@ export function finishRace(code: string): Room | null {
     // ensure everyone is marked finished
     if (!player.isFinished) {
       player.isFinished = true;
+      room.finishCounter = (room.finishCounter ?? 0) + 1;
+      player.finishOrder = room.finishCounter;
     }
   }
 
@@ -269,6 +282,7 @@ export function restartRace(code: string): Room | null {
   room.words = [];
   room.startTime = null;
   room.endTime = null;
+  room.finishCounter = 0;
 
   for (const player of room.players) {
     player.wpm = 0;
@@ -305,10 +319,7 @@ export function getTeamScores(code: string) {
 }
 
 export function findRoomByPlayerId(playerId: string): Room | undefined {
-  for (const room of rooms.values()) {
-    if (room.players.find((p) => p.id === playerId)) {
-      return room;
-    }
-  }
-  return undefined;
+  // O(1) lookup using player-room index
+  const code = playerRoomIndex.get(playerId);
+  return code ? rooms.get(code) : undefined;
 }
