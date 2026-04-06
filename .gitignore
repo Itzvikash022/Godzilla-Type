@@ -121,3 +121,4 @@ dist
 ref
 server/load-test.ts
 SERVER_API_DOCUMENTATION.md
+server/load_test_results.md

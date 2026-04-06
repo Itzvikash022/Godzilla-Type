@@ -10,7 +10,7 @@ export const DEFAULT_WORD_COUNT = 50;
 export const ROOM_CODE_LENGTH = 6;
 export const COUNTDOWN_SECONDS = 5;
 export const PROGRESS_BROADCAST_INTERVAL = 150; // ms
-export const MAX_PLAYERS_PER_ROOM = 10;
+export const MAX_PLAYERS_PER_ROOM = 50;
 
 export const TEAM_COLORS = {
   RED: { bg: '#ef4444', text: '#fecaca', label: 'Red Team' },
