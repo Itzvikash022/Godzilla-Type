@@ -141,8 +141,14 @@ function Room() {
       }, (data.duration + 5) * 1000);
     }));
 
-    cleanups.push(on(SocketEvents.RACE_PROGRESS, (data: { players: Player[] }) => {
-      setPlayers(data.players);
+    cleanups.push(on(SocketEvents.RACE_PROGRESS, (data: { players: Partial<Player>[] }) => {
+      setPlayers(prevPlayers => {
+        const updates = new Map(data.players.map(p => [p.id, p]));
+        return prevPlayers.map(p => ({
+            ...p,
+            ...(updates.get(p.id) || {})
+        }));
+      });
     }));
 
     cleanups.push(on(SocketEvents.RACE_FINISHED, (data: RaceResultsData) => {
