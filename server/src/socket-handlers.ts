@@ -15,7 +15,9 @@ import {
   PlayerReadyPayload,
   KickPlayerPayload,
   COUNTDOWN_SECONDS,
+  RaceState,
 } from '@godzilla-type/shared';
+import type { Player } from '@godzilla-type/shared';
 import {
   createRoom,
   joinRoom,
@@ -41,6 +43,86 @@ const memeHistory = new Map<string, MemeMessagePayload[]>(); // roomCode -> last
 const memeCooldowns = new Map<string, number>(); // playerId -> lastSentTimestamp
 const MEME_COOLDOWN_MS = 3000;
 const MEME_HISTORY_LIMIT = 20;
+
+// ---- Server-side Progress Throttle ----
+const lastProgressTime = new Map<string, number>(); // socketId -> timestamp
+const SERVER_PROGRESS_MIN_INTERVAL = 100; // ms — server-side floor to prevent event flooding
+
+// ---- Per-Room Broadcast Batching ----
+// Instead of emitting RACE_PROGRESS on every PLAYER_PROGRESS event (O(N²)),
+// we batch updates per room within a 50ms window.
+const roomBroadcastTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function scheduleBroadcast(io: Server, roomCode: string, players: Player[]) {
+  if (roomBroadcastTimers.has(roomCode)) return; // already scheduled within this window
+  roomBroadcastTimers.set(
+    roomCode,
+    setTimeout(() => {
+      const room = getRoomByCode(roomCode);
+      if (room && room.state === RaceState.RACING) {
+        io.to(roomCode).emit(SocketEvents.RACE_PROGRESS, {
+          players: room.players,
+        });
+      }
+      roomBroadcastTimers.delete(roomCode);
+    }, 50) // 50ms batch window — collapses N player updates into 1 broadcast
+  );
+}
+
+// ---- Race Timer Management ----
+// Track race timers so they can be cancelled when a race finishes early
+const raceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+/**
+ * Central function to finalize a race. Called by both:
+ * 1. PLAYER_PROGRESS handler (when all players finish)
+ * 2. Auto-end timeout (when timer expires)
+ *
+ * finishRace() in rooms.ts is now idempotent (returns null if already finished),
+ * so calling this multiple times is safe — only the first will succeed.
+ */
+function finalizeRace(io: Server, roomCode: string) {
+  const finished = finishRace(roomCode);
+  if (!finished) return; // already finished or room gone — idempotent ✓
+
+  const teamScores = finished.settings.teamMode
+    ? getTeamScores(roomCode)
+    : undefined;
+
+  io.to(roomCode).emit(SocketEvents.RACE_FINISHED, {
+    players: finished.players,
+    teamScores,
+  });
+  io.to(roomCode).emit(SocketEvents.ROOM_UPDATED, { room: finished });
+
+  // Cancel the auto-end timer if it's still pending (player-triggered finish)
+  const timer = raceTimers.get(roomCode);
+  if (timer) {
+    clearTimeout(timer);
+    raceTimers.delete(roomCode);
+  }
+
+  // Cancel any pending broadcast batch for this room
+  const batchTimer = roomBroadcastTimers.get(roomCode);
+  if (batchTimer) {
+    clearTimeout(batchTimer);
+    roomBroadcastTimers.delete(roomCode);
+  }
+
+  // Save race results asynchronously — does NOT block the event loop
+  for (const player of finished.players) {
+    saveRaceResult({
+      playerName: player.name,
+      wpm: player.wpm,
+      netWpm: player.netWpm,
+      accuracy: player.accuracy,
+      finishOrder: player.finishOrder,
+      timestamp: Date.now(),
+      roomCode: roomCode,
+      timerDuration: finished.settings.timerDuration,
+    });
+  }
+}
 
 export function registerSocketHandlers(io: Server) {
   io.on('connection', (socket: Socket) => {
@@ -184,36 +266,12 @@ export function registerSocketHandlers(io: Server) {
             io.to(roomCode).emit(SocketEvents.ROOM_UPDATED, { room: racing });
 
             // Auto-end race after timer expires + 2s buffer
-            setTimeout(() => {
-              const currentRoom = getRoomByCode(roomCode);
-              if (currentRoom && currentRoom.state === 'RACING') {
-                const finished = finishRace(roomCode);
-                if (finished) {
-                  const teamScores = finished.settings.teamMode
-                    ? getTeamScores(roomCode)
-                    : undefined;
-                  io.to(roomCode).emit(SocketEvents.RACE_FINISHED, {
-                    players: finished.players,
-                    teamScores,
-                  });
-                  io.to(roomCode).emit(SocketEvents.ROOM_UPDATED, { room: finished });
-
-                  // Save results
-                  for (const player of finished.players) {
-                    saveRaceResult({
-                      playerName: player.name,
-                      wpm: player.wpm,
-                      netWpm: player.netWpm,
-                      accuracy: player.accuracy,
-                      finishOrder: player.finishOrder,
-                      timestamp: Date.now(),
-                      roomCode: roomCode,
-                      timerDuration: finished.settings.timerDuration,
-                    });
-                  }
-                }
-              }
+            // Store timer handle so it can be cancelled on early finish
+            const autoEndTimer = setTimeout(() => {
+              raceTimers.delete(roomCode);
+              finalizeRace(io, roomCode); // idempotent — safe to call even if already finished
             }, (racing.settings.timerDuration + 2) * 1000);
+            raceTimers.set(roomCode, autoEndTimer);
           }
         }
       }, 1000);
@@ -221,6 +279,18 @@ export function registerSocketHandlers(io: Server) {
 
     // ---- PLAYER PROGRESS ----
     socket.on(SocketEvents.PLAYER_PROGRESS, (payload: PlayerProgressPayload) => {
+      // ── SERVER-SIDE THROTTLE: ignore events faster than 100ms per player ──
+      const now = Date.now();
+      const lastTime = lastProgressTime.get(socket.id) ?? 0;
+      // Allow finish events through always (critical path)
+      if (!payload.isFinished && now - lastTime < SERVER_PROGRESS_MIN_INTERVAL) return;
+      lastProgressTime.set(socket.id, now);
+
+      // ── STATE GUARD: reject events if race is not active ──
+      // Must be checked BEFORE updatePlayerProgress to prevent corrupting finalized data
+      const preCheck = getRoomByCode(payload.roomCode);
+      if (!preCheck || preCheck.state !== RaceState.RACING) return;
+
       const room = updatePlayerProgress(payload.roomCode, socket.id, {
         charsTyped: payload.charsTyped,
         errors: payload.errors,
@@ -231,42 +301,14 @@ export function registerSocketHandlers(io: Server) {
         isFinished: payload.isFinished,
       });
 
-      if (room) {
-        // Broadcast to everyone in the room
-        io.to(payload.roomCode).emit(SocketEvents.RACE_PROGRESS, {
-          players: room.players,
-        });
+      if (!room) return;
 
-        // Check if all finished
-        if (payload.isFinished && checkRaceComplete(payload.roomCode)) {
-          const finished = finishRace(payload.roomCode);
-          if (finished) {
-            const teamScores = finished.settings.teamMode
-              ? getTeamScores(payload.roomCode)
-              : undefined;
-            io.to(payload.roomCode).emit(SocketEvents.RACE_FINISHED, {
-              players: finished.players,
-              teamScores,
-            });
-            io.to(payload.roomCode).emit(SocketEvents.ROOM_UPDATED, {
-              room: finished,
-            });
+      // Use batched broadcasting instead of per-event emit
+      scheduleBroadcast(io, payload.roomCode, room.players);
 
-            // Save results
-            for (const player of finished.players) {
-              saveRaceResult({
-                playerName: player.name,
-                wpm: player.wpm,
-                netWpm: player.netWpm,
-                accuracy: player.accuracy,
-                finishOrder: player.finishOrder,
-                timestamp: Date.now(),
-                roomCode: payload.roomCode,
-                timerDuration: finished.settings.timerDuration,
-              });
-            }
-          }
-        }
+      // Check if all finished — finalizeRace is idempotent
+      if (payload.isFinished && checkRaceComplete(payload.roomCode)) {
+        finalizeRace(io, payload.roomCode);
       }
     });
 
@@ -279,6 +321,12 @@ export function registerSocketHandlers(io: Server) {
       if (restarted) {
         // Clear meme history for the room on restart
         memeHistory.delete(roomCode);
+        // Clear any pending timers
+        const timer = raceTimers.get(roomCode);
+        if (timer) {
+          clearTimeout(timer);
+          raceTimers.delete(roomCode);
+        }
         io.to(roomCode).emit(SocketEvents.ROOM_UPDATED, { room: restarted });
       }
     });
@@ -319,6 +367,8 @@ export function registerSocketHandlers(io: Server) {
     // ---- DISCONNECT ----
     socket.on('disconnect', () => {
       console.log(`🔌 Player disconnected: ${socket.id}`);
+      lastProgressTime.delete(socket.id); // cleanup throttle map
+      memeCooldowns.delete(socket.id);    // cleanup meme cooldown
       handleLeavePreviousRoom(socket);
     });
   });

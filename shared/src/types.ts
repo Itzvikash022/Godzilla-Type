@@ -53,6 +53,7 @@ export interface Room {
   words: string[];
   startTime: number | null;
   endTime: number | null;
+  finishCounter: number;
 }
 
 export interface RaceResult {

@@ -13,6 +13,13 @@ const DB_PATH = path.join(__dirname, '..', 'godzilla-type.db');
 
 let db: SqlJsDatabase;
 
+// ---- Async Write Queue ----
+// Instead of calling fs.writeFileSync on every result (which blocks the event loop),
+// we batch DB writes and flush to disk on a timer.
+let dbDirty = false; // true if in-memory DB has changes not yet flushed to disk
+const DB_FLUSH_INTERVAL = 5000; // flush every 5 seconds
+let flushTimer: ReturnType<typeof setInterval> | null = null;
+
 export async function initDatabase() {
   const SQL = await initSqlJs();
 
@@ -55,20 +62,36 @@ export async function initDatabase() {
     );
   `);
 
-  saveDB();
+  await saveDBAsync();
   console.log('📦 Database initialized');
+
+  // Start periodic flush timer
+  flushTimer = setInterval(async () => {
+    if (dbDirty) {
+      await saveDBAsync();
+      dbDirty = false;
+    }
+  }, DB_FLUSH_INTERVAL);
 }
 
-function saveDB() {
+/**
+ * Non-blocking async disk flush. Replaces the old synchronous saveDB().
+ * Only called by the flush timer and initDatabase — never in the hot path.
+ */
+async function saveDBAsync(): Promise<void> {
   try {
     const data = db.export();
     const buffer = Buffer.from(data);
-    fs.writeFileSync(DB_PATH, buffer);
+    await fs.promises.writeFile(DB_PATH, buffer);
   } catch (err) {
     console.error('Failed to save database:', err);
   }
 }
 
+/**
+ * Save a race result. The in-memory sql.js operations are synchronous but fast (~μs).
+ * Disk flush is deferred to the periodic timer — this does NOT block the event loop.
+ */
 export function saveRaceResult(result: RaceResult) {
   try {
     db.run(
@@ -120,7 +143,8 @@ export function saveRaceResult(result: RaceResult) {
       }
     }
 
-    saveDB();
+    // Mark dirty — disk flush happens on timer, NOT here
+    dbDirty = true;
   } catch (err) {
     console.error('Failed to save race result:', err);
   }

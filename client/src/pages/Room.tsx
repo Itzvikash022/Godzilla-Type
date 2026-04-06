@@ -52,6 +52,9 @@ function Room() {
   const [memeMessages, setMemeMessages] = useState<MemeMessagePayload[]>([]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const finishFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref to read current engine values without adding them as useEffect dependencies
+  const engineRef = useRef<any>(null);
   const playerName = nameInput.trim() || 'Player1';
   const currentPlayerId = socket?.id || '';
   const isHost = room?.hostId === currentPlayerId;
@@ -106,6 +109,9 @@ function Room() {
     onFinish: handleFinish,
   });
 
+  // Keep engineRef always pointing to the latest engine instance
+  engineRef.current = engine;
+
   useEffect(() => {
     if (!isConnected || !nameConfirmed) return;
     const cleanups: (() => void)[] = [];
@@ -126,6 +132,13 @@ function Room() {
       setResetKey(prev => prev + 1);
       engine.resetTest(data.words, data.prompt);
       engine.startTimer(data.startTime);
+
+      // Fallback timeout: if RACE_FINISHED is never received, prevent permanent UI freeze
+      if (finishFallbackRef.current) clearTimeout(finishFallbackRef.current);
+      finishFallbackRef.current = setTimeout(() => {
+        console.warn('[Fallback] RACE_FINISHED not received within timeout, forcing end state');
+        setRaceResults(prev => prev); // trigger re-render check
+      }, (data.duration + 5) * 1000);
     }));
 
     cleanups.push(on(SocketEvents.RACE_PROGRESS, (data: { players: Player[] }) => {
@@ -135,6 +148,11 @@ function Room() {
     cleanups.push(on(SocketEvents.RACE_FINISHED, (data: RaceResultsData) => {
       setRaceResults(data);
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      // Clear fallback timer — we got the real event
+      if (finishFallbackRef.current) {
+        clearTimeout(finishFallbackRef.current);
+        finishFallbackRef.current = null;
+      }
     }));
 
     cleanups.push(on(SocketEvents.CHAT_MESSAGE, (msg: ChatMessagePayload) => {
@@ -162,26 +180,30 @@ function Room() {
     return () => cleanups.forEach((c) => c());
   }, [isConnected, nameConfirmed, on, code, playerName, emit]);
 
+  // ── Stable progress broadcast interval ──
+  // Uses engineRef to read current values WITHOUT triggering effect re-runs.
+  // Only re-creates when racing state changes — NOT on every keystroke.
   useEffect(() => {
-    if (isRacing && !engine.isFinished) {
-      progressIntervalRef.current = setInterval(() => {
-        emit(SocketEvents.PLAYER_PROGRESS, {
-          roomCode: code,
-          charsTyped: engine.totalCharsTyped,
-          errors: engine.incorrectChars,
-          wpm: engine.wpm,
-          netWpm: engine.netWpm,
-          accuracy: engine.accuracy,
-          progress: engine.progress,
-          isFinished: engine.isFinished,
-        });
-      }, PROGRESS_BROADCAST_INTERVAL);
+    if (!isRacing || engine.isFinished) return;
 
-      return () => {
-        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-      };
-    }
-  }, [isRacing, engine.isFinished, engine.totalCharsTyped, engine.wpm, engine.netWpm, engine.accuracy, engine.progress, code, emit]);
+    progressIntervalRef.current = setInterval(() => {
+      const e = engineRef.current;
+      emit(SocketEvents.PLAYER_PROGRESS, {
+        roomCode: code,
+        charsTyped: e.totalCharsTyped,
+        errors: e.incorrectChars,
+        wpm: e.wpm,
+        netWpm: e.netWpm,
+        accuracy: e.accuracy,
+        progress: e.progress,
+        isFinished: e.isFinished,
+      });
+    }, PROGRESS_BROADCAST_INTERVAL);
+
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, [isRacing, engine.isFinished, code, emit]);
 
   const handleStartRace = () => emit(SocketEvents.START_RACE, { roomCode: code });
   const handleRestartRace = () => {

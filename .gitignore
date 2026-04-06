@@ -116,3 +116,8 @@ dist
 # Godzilla Type specific
 *.db
 *.sqlite
+
+
+ref
+server/load-test.ts
+SERVER_API_DOCUMENTATION.md
