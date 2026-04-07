@@ -12,6 +12,7 @@ import {
   UpdateSettingsPayload,
   ChatMessagePayload,
   MemeMessagePayload,
+  ChatTypingPayload,
   PlayerReadyPayload,
   KickPlayerPayload,
   COUNTDOWN_SECONDS,
@@ -55,17 +56,33 @@ const roomBroadcastTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function scheduleBroadcast(io: Server, roomCode: string, players: Player[]) {
   if (roomBroadcastTimers.has(roomCode)) return; // already scheduled within this window
+
+  // Adaptive batching: scales from 50ms up to 200ms based on room density
+  // 10 players = 50ms | 20 players = 100ms | 50+ players = 200ms
+  const batchWindow = Math.min(Math.max(50, players.length * 5), 200);
+
   roomBroadcastTimers.set(
     roomCode,
     setTimeout(() => {
       const room = getRoomByCode(roomCode);
       if (room && room.state === RaceState.RACING) {
         io.to(roomCode).emit(SocketEvents.RACE_PROGRESS, {
-          players: room.players,
+          // Payload stripping: Only send the metrics that change, saving huge bandwidth/CPU
+          players: room.players.map(p => ({
+            id: p.id,
+            wpm: p.wpm,
+            netWpm: p.netWpm,
+            accuracy: p.accuracy,
+            progress: p.progress,
+            charsTyped: p.charsTyped,
+            errors: p.errors,
+            isFinished: p.isFinished,
+            finishOrder: p.finishOrder
+          })),
         });
       }
       roomBroadcastTimers.delete(roomCode);
-    }, 50) // 50ms batch window — collapses N player updates into 1 broadcast
+    }, batchWindow) 
   );
 }
 
@@ -186,8 +203,20 @@ export function registerSocketHandlers(io: Server) {
       const isPlayerInRoom = room.players.some((p) => p.id === socket.id);
       if (!isPlayerInRoom) return;
 
+      // Force server time for chronological determinism
+      payload.timestamp = Date.now();
+
       // Broadcast message to everyone in the room
       io.to(payload.roomCode).emit(SocketEvents.CHAT_MESSAGE, payload);
+    });
+
+    // ---- CHAT TYPING INDICATOR ----
+    socket.on(SocketEvents.CHAT_TYPING_START, (payload: ChatTypingPayload) => {
+      io.to(payload.roomCode).emit(SocketEvents.CHAT_TYPING_START, payload);
+    });
+
+    socket.on(SocketEvents.CHAT_TYPING_STOP, (payload: ChatTypingPayload) => {
+      io.to(payload.roomCode).emit(SocketEvents.CHAT_TYPING_STOP, payload);
     });
 
     // ---- ASSIGN TEAM ----
@@ -342,6 +371,9 @@ export function registerSocketHandlers(io: Server) {
         return;
       }
       memeCooldowns.set(socket.id, now);
+
+      // Force server time
+      payload.timestamp = now;
 
       // Store in history ring buffer
       const history = memeHistory.get(payload.roomCode) ?? [];

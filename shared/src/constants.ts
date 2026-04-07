@@ -3,7 +3,7 @@
 // ==========================================
 
 export const TIMER_MODES = [15, 30, 60] as const;
-export type TimerMode = (typeof TIMER_MODES)[number];
+export type TimerMode = number;
 
 export const DEFAULT_TIMER = 30;
 export const DEFAULT_WORD_COUNT = 50;

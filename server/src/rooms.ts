@@ -133,6 +133,12 @@ export function updateSettings(code: string, settings: Partial<RoomSettings>): R
   const room = rooms.get(code);
   if (!room) return null;
 
+  // Enforce boundary for custom timer
+  if (settings.timerDuration !== undefined) {
+    if (settings.timerDuration < 10) settings.timerDuration = 10;
+    if (settings.timerDuration > 300) settings.timerDuration = 300;
+  }
+
   room.settings = { ...room.settings, ...settings };
   return room;
 }

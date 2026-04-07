@@ -29,6 +29,7 @@ import type {
   PromptMode,
   ChatMessagePayload,
   MemeMessagePayload,
+  ChatTypingPayload,
 } from '@godzilla-type/shared';
 
 function Room() {
@@ -50,6 +51,7 @@ function Room() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [messages, setMessages] = useState<ChatMessagePayload[]>([]);
   const [memeMessages, setMemeMessages] = useState<MemeMessagePayload[]>([]);
+  const [typingPlayers, setTypingPlayers] = useState<Set<string>>(new Set());
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const finishFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -141,8 +143,14 @@ function Room() {
       }, (data.duration + 5) * 1000);
     }));
 
-    cleanups.push(on(SocketEvents.RACE_PROGRESS, (data: { players: Player[] }) => {
-      setPlayers(data.players);
+    cleanups.push(on(SocketEvents.RACE_PROGRESS, (data: { players: Partial<Player>[] }) => {
+      setPlayers(prevPlayers => {
+        const updates = new Map(data.players.map(p => [p.id, p]));
+        return prevPlayers.map(p => ({
+            ...p,
+            ...(updates.get(p.id) || {})
+        }));
+      });
     }));
 
     cleanups.push(on(SocketEvents.RACE_FINISHED, (data: RaceResultsData) => {
@@ -167,8 +175,24 @@ function Room() {
       setMemeMessages(history); // isHistory flag already set server-side
     }));
 
+    cleanups.push(on(SocketEvents.CHAT_TYPING_START, (payload: ChatTypingPayload) => {
+      setTypingPlayers((prev) => {
+        const next = new Set(prev);
+        next.add(payload.playerName);
+        return next;
+      });
+    }));
+
+    cleanups.push(on(SocketEvents.CHAT_TYPING_STOP, (payload: ChatTypingPayload) => {
+      setTypingPlayers((prev) => {
+        const next = new Set(prev);
+        next.delete(payload.playerName);
+        return next;
+      });
+    }));
+
     cleanups.push(on(SocketEvents.ERROR, (data: { message: string }) => {
-      if (data.message === 'You have been kicked from the room.') {
+      if (data.message.includes('kicked') || data.message.includes('Unable to join')) {
         navigate('/multiplayer');
       }
     }));
@@ -266,22 +290,18 @@ function Room() {
     });
   };
 
-  const handleSendMeme = (meme: { memeId: string; imageUrl: string; soundUrl?: string }) => {
-    const eventId = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random()}`;
-    const payload: MemeMessagePayload = {
-      eventId,
-      roomCode: code!,
-      playerId: currentPlayerId,
-      playerName,
-      memeId: meme.memeId,
-      imageUrl: meme.imageUrl,
-      soundUrl: meme.soundUrl,
-      timestamp: Date.now(),
-    };
-    emit(SocketEvents.MEME_SEND, payload);
-  };
+  const handleSendMeme = useCallback((meme: { memeId: string; imageUrl: string; soundUrl?: string }) => {
+    if (!code) return;
+    emit(SocketEvents.MEME_SEND, { ...meme, roomCode: code, playerId: currentPlayerId, playerName });
+  }, [code, emit, currentPlayerId, playerName]);
+
+  const handleTypingStart = useCallback(() => {
+    emit(SocketEvents.CHAT_TYPING_START, { roomCode: code, playerName });
+  }, [emit, code, playerName]);
+
+  const handleTypingStop = useCallback(() => {
+    emit(SocketEvents.CHAT_TYPING_STOP, { roomCode: code, playerName });
+  }, [emit, code, playerName]);
 
   // Phase 10: Show username modal if name not yet confirmed
   if (!nameConfirmed) {
@@ -465,9 +485,12 @@ function Room() {
             <Chatbox
               messages={messages}
               memeMessages={memeMessages}
+              currentPlayerId={currentPlayerId}
               onSendMessage={handleSendMessage}
               onSendMeme={handleSendMeme}
-              currentPlayerId={currentPlayerId}
+              typingPlayers={Array.from(typingPlayers)}
+              onTypingStart={handleTypingStart}
+              onTypingStop={handleTypingStop}
             />
           </div>
         </div>
