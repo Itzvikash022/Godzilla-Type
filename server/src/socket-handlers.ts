@@ -12,6 +12,7 @@ import {
   UpdateSettingsPayload,
   ChatMessagePayload,
   MemeMessagePayload,
+  ChatTypingPayload,
   PlayerReadyPayload,
   KickPlayerPayload,
   COUNTDOWN_SECONDS,
@@ -202,8 +203,20 @@ export function registerSocketHandlers(io: Server) {
       const isPlayerInRoom = room.players.some((p) => p.id === socket.id);
       if (!isPlayerInRoom) return;
 
+      // Force server time for chronological determinism
+      payload.timestamp = Date.now();
+
       // Broadcast message to everyone in the room
       io.to(payload.roomCode).emit(SocketEvents.CHAT_MESSAGE, payload);
+    });
+
+    // ---- CHAT TYPING INDICATOR ----
+    socket.on(SocketEvents.CHAT_TYPING_START, (payload: ChatTypingPayload) => {
+      io.to(payload.roomCode).emit(SocketEvents.CHAT_TYPING_START, payload);
+    });
+
+    socket.on(SocketEvents.CHAT_TYPING_STOP, (payload: ChatTypingPayload) => {
+      io.to(payload.roomCode).emit(SocketEvents.CHAT_TYPING_STOP, payload);
     });
 
     // ---- ASSIGN TEAM ----
@@ -358,6 +371,9 @@ export function registerSocketHandlers(io: Server) {
         return;
       }
       memeCooldowns.set(socket.id, now);
+
+      // Force server time
+      payload.timestamp = now;
 
       // Store in history ring buffer
       const history = memeHistory.get(payload.roomCode) ?? [];

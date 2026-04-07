@@ -11,14 +11,18 @@ interface ChatboxProps {
     onSendMessage: (text: string) => void;
     onSendMeme: (meme: { memeId: string; imageUrl: string; soundUrl?: string }) => void;
     currentPlayerId: string;
+    typingPlayers?: string[];
+    onTypingStart?: () => void;
+    onTypingStop?: () => void;
 }
 
-export default function Chatbox({ messages, memeMessages, onSendMessage, onSendMeme, currentPlayerId }: ChatboxProps) {
+export default function Chatbox({ messages, memeMessages, onSendMessage, onSendMeme, currentPlayerId, typingPlayers, onTypingStart, onTypingStop }: ChatboxProps) {
     const [inputValue, setInputValue] = useState('');
     const [showMemePicker, setShowMemePicker] = useState(false);
     const [memeCooldownUntil, setMemeCooldownUntil] = useState<number>(0);
     const [, forceUpdate] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { playOnce, replay } = useMemeSound();
 
     // Unified chronological feed
@@ -56,6 +60,19 @@ export default function Chatbox({ messages, memeMessages, onSendMessage, onSendM
         if (text) {
             onSendMessage(text);
             setInputValue('');
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            if (onTypingStop) onTypingStop();
+        }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputValue(e.target.value);
+        if (onTypingStart && onTypingStop) {
+            onTypingStart();
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => {
+                onTypingStop();
+            }, 1500);
         }
     };
 
@@ -136,8 +153,17 @@ export default function Chatbox({ messages, memeMessages, onSendMessage, onSendM
                 </div>
             )}
 
+            {/* Typing Indicator */}
+            {typingPlayers && typingPlayers.length > 0 && (
+                <div className="absolute bottom-[56px] left-4 text-[10px] text-main font-mono animate-pulse bg-bg-secondary/90 px-2 py-0.5 rounded shadow-sm border border-main/10 backdrop-blur-sm z-10 transition-opacity">
+                    {typingPlayers.length === 1 ? `${typingPlayers[0]} is typing...` : 
+                     typingPlayers.length === 2 ? `${typingPlayers[0]} and ${typingPlayers[1]} are typing...` : 
+                     `${typingPlayers[0]}, ${typingPlayers[1]} and ${typingPlayers.length - 2} others are typing...`}
+                </div>
+            )}
+
             {/* Unified Input Area */}
-            <form onSubmit={handleSubmit} className="shrink-0 p-2 border-t border-main-sub/10 bg-bg-secondary/40 flex items-center gap-1">
+            <form onSubmit={handleSubmit} className="shrink-0 p-2 border-t border-main-sub/10 bg-bg-secondary/40 flex items-center gap-1 z-20 relative">
                 <div className="flex items-center gap-0.5 px-1">
                     <button
                         type="button"
@@ -153,7 +179,7 @@ export default function Chatbox({ messages, memeMessages, onSendMessage, onSendM
                     <input
                         type="text"
                         value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
+                        onChange={handleInputChange}
                         placeholder={memeCooldownUntil > Date.now() ? "Meme cooldown..." : "Type a message..."}
                         className="w-full bg-transparent border-none outline-none px-2 py-2 text-sm text-text-primary placeholder:text-main-sub/30 font-mono"
                         maxLength={100}

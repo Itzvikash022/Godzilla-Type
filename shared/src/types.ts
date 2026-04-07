@@ -171,6 +171,11 @@ export interface MemeMessagePayload {
   isHistory?: boolean;     // true when emitted as part of MEME_HISTORY — sound must NOT play
 }
 
+export interface ChatTypingPayload {
+  roomCode: string;
+  playerName: string;
+}
+
 // ---- Socket Events ----
 
 export const SocketEvents = {
@@ -199,5 +204,8 @@ export const SocketEvents = {
   MEME_SEND: 'meme-send',
   MEME_MESSAGE: 'meme-message',
   MEME_HISTORY: 'meme-history',
+  CHAT_TYPING_START: 'chat-typing-start',
+  CHAT_TYPING_STOP: 'chat-typing-stop',
+  ROOM_DESTROYED: 'room-destroyed',
   ERROR: 'error',
 } as const;
